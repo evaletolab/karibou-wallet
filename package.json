@@ -1,7 +1,7 @@
 {
   "name": "karibou-wallet",
   "description": "Simple Wallet API client library for Node.js",
-  "version": "0.0.5",
+  "version": "0.0.8",
   "author": "Olivier Evalet <evaleto@gmail.com>",
   "maintainers": [
     {
@@ -20,12 +20,12 @@
     }
   ],
   "dependencies": {
-    "fnv-plus": "^1.2.12",
-    "iban": "0.0.5",
-    "js-money": "^0.4.0",
+    "fnv-plus": "1.2.x",
+    "iban": "0.0.x",
+    "js-money": "0.x",
     "mersenne": ">= 0.0.3",
-    "mongoose": "^4.2.4",
-    "underscore": "^1.8.3"
+    "mongoose": "4.x",
+    "underscore": "1.8.x"
   },
   "devDependencies": {
     "async": "^1.5.0",

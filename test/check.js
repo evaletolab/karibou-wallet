@@ -54,7 +54,9 @@ describe("check", function(){
     var number=require('fnv-plus').hash('hello'+Date.now(),52).dec()+'';
 
     var modified=check.mod10gen(number);
-    // console.log('--------------',number,modified,check.mod10check(modified))
+    // ;
+    // check.mod10check('20151104007602173901315000000012').should.equal('20151104007602173901315000000012')
+    check.mod10check(modified).should.equal(modified)
     done();
   });
 
