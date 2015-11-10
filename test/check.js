@@ -50,19 +50,11 @@ describe("check", function(){
     done()
   });
 
-  it.skip("Mod-10 generate",function (done) {
+  it("Mod-10 generate",function (done) {
     var number=require('fnv-plus').hash('hello'+Date.now(),52).dec()+'';
 
-    var sum=check.mod10check(number.substr(15),true);
-    console.log('--------------',sum)
-    sum= (10 - (sum % 10)) % 10;
-    console.log('--------------',sum,number+sum,check.mod10check(number+sum))
-    console.log('--------------',0,number+0,check.mod10check(number+0))
-    console.log('--------------',1,number+1,check.mod10check(number+1))
-    console.log('--------------',2,number+2,check.mod10check(number+2))
-    console.log('--------------',3,number+3,check.mod10check(number+3))
-    console.log('--------------',4,number+4,check.mod10check(number+4))
-    console.log('--------------',5,number+5,check.mod10check(number+5))
+    var modified=check.mod10gen(number);
+    // console.log('--------------',number,modified,check.mod10check(modified))
     done();
   });
 
