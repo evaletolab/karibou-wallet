@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.054.001.02" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <BkToCstmrDbtCdtNtfctn>
+    <GrpHdr>
+      <MsgId>KOBE151028844182</MsgId>
+      <CreDtTm>2015-10-28T05:14:00.00Z</CreDtTm>
+    </GrpHdr>
+    <Ntfctn>
+      <Id>KOBE151028844182</Id>
+      <CreDtTm>2015-10-28T05:14:00.00Z</CreDtTm>
+      <Acct>
+        <Id>
+          <IBAN>CH7609000000146156438</IBAN>
+        </Id>
+      </Acct>
+      <Ntry>
+        <Amt Ccy="CHF">283.41</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt>
+          <Dt>2015-10-28</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2015-10-28</Dt>
+        </ValDt>
+        <AcctSvcrRef>20151028007602162484858000000012</AcctSvcrRef>
+        <BkTxCd>
+          <Domn>
+            <Cd>PMNT</Cd>
+            <Fmly>
+              <Cd>RCDT</Cd>
+              <SubFmlyCd>FICT</SubFmlyCd>
+            </Fmly>
+          </Domn>
+        </BkTxCd>
+        <NtryDtls>
+          <TxDtls>
+            <Refs>
+              <AcctSvcrRef>20151028007602162484858000000012</AcctSvcrRef>
+            </Refs>
+            <BkTxCd>
+              <Domn>
+                <Cd>PMNT</Cd>
+                <Fmly>
+                  <Cd>RCDT</Cd>
+                  <SubFmlyCd>FICT</SubFmlyCd>
+                </Fmly>
+              </Domn>
+            </BkTxCd>
+          </TxDtls>
+        </NtryDtls>
+        <AddtlNtryInf>VIREMENT DE SIC ONLINE 4835 DONNEUR D'ORDRE: THE CURRENCY CLOUD CHF SETTLEMENT A THE CURRECY CLOUD LIMITED,1ST FLOOR 164 BISHOPSGATE LONDON,EC2M 4LX 151028CH00KVNFJU COMMUNICATIONS: STRIPE TRADE REF: 20151023-HWGRRB</AddtlNtryInf>
+      </Ntry>
+    </Ntfctn>
+  </BkToCstmrDbtCdtNtfctn>
+</Document>

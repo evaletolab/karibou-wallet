@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.054.001.02" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <BkToCstmrDbtCdtNtfctn>
+    <GrpHdr>
+      <MsgId>KOBE151027840273</MsgId>
+      <CreDtTm>2015-10-27T05:12:00.00Z</CreDtTm>
+    </GrpHdr>
+    <Ntfctn>
+      <Id>KOBE151027840273</Id>
+      <CreDtTm>2015-10-27T05:12:00.00Z</CreDtTm>
+      <Acct>
+        <Id>
+          <IBAN>CH7609000000146156438</IBAN>
+        </Id>
+      </Acct>
+      <Ntry>
+        <Amt Ccy="CHF">66.87</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt>
+          <Dt>2015-10-27</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2015-10-27</Dt>
+        </ValDt>
+        <AcctSvcrRef>20151026000800108171599000000103</AcctSvcrRef>
+        <BkTxCd>
+          <Domn>
+            <Cd>PMNT</Cd>
+            <Fmly>
+              <Cd>ICDT</Cd>
+              <SubFmlyCd>ESCT</SubFmlyCd>
+            </Fmly>
+          </Domn>
+        </BkTxCd>
+        <NtryDtls>
+          <TxDtls>
+            <Refs>
+              <MsgId>MSG43D6D752E1B845898DC2483D453413EC</MsgId>
+              <AcctSvcrRef>20151026000800108171599000000103</AcctSvcrRef>
+              <PmtInfId>BLVL-1-15102615281739</PmtInfId>
+            </Refs>
+            <BkTxCd>
+              <Domn>
+                <Cd>PMNT</Cd>
+                <Fmly>
+                  <Cd>ICDT</Cd>
+                  <SubFmlyCd>ESCT</SubFmlyCd>
+                </Fmly>
+              </Domn>
+            </BkTxCd>
+          </TxDtls>
+        </NtryDtls>
+        <AddtlNtryInf>GIRO INTERNATIONAL (SEPA) EUR 61.28 AU COURS DE 1.0912 BANQUE POPULAIRE BOURGOGNE FRANCHE COMTE 14, BOULEVARD DE LA TREMOUILLE 21008 DIJON FR7610807004364502122875997 CAPPI SARL</AddtlNtryInf>
+      </Ntry>
+    </Ntfctn>
+  </BkToCstmrDbtCdtNtfctn>
+</Document>
