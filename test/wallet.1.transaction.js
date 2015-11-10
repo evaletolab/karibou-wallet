@@ -31,7 +31,8 @@ describe("wallet.transaction", function(){
   var giftWallet={
     id:'1111111',
     email:'giftcode@gg.com',
-    description:'this is a wallet for customer'
+    description:'this is a wallet for customer',
+    giftcode:true
   };
 
   var capturedTrans={

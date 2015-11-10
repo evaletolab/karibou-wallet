@@ -30,8 +30,10 @@ describe("driver.mongoose.transfer", function(){
   };
 
   var giftWallet={
+    id:'1111111',
     email:'giftcode@gg.com',
-    description:'this is a wallet for customer'
+    description:'this is a wallet for customer',
+    giftcode:true
   };
 
   var validTransfer={
@@ -130,8 +132,7 @@ describe("driver.mongoose.transfer", function(){
   it("User register an existing GIFTCODE  ", function(done){
     var card={
       name:'User registration',
-      number:giftWallet.card.number,
-      uid:1111112
+      number:giftWallet.card.number
     };
 
 
@@ -165,8 +166,7 @@ describe("driver.mongoose.transfer", function(){
   it("Credit our wallet with already credited giftcode ", function(done){
     var card={
       name:'Paf Le chien',
-      number:userWallet.card.number,
-      uid:1111112
+      number:giftWallet.card.number,
     };
 
     Wallets.transferWallet(userWallet.wid,card).then(undefined, function (error) {
