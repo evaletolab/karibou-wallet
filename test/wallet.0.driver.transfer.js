@@ -82,7 +82,6 @@ describe("driver.mongoose.transfer", function(){
   it("Debit our empty GIFTCODE throw an error", function(done){
     var transfer={
       amount:400,
-      wallet:userWallet.wid,
       type:'debit',
     }
     Wallets.transfer_create(giftWallet.wid,transfer).then(undefined, function (error) {
@@ -97,7 +96,6 @@ describe("driver.mongoose.transfer", function(){
   it("Credit our GIFTCODE with 4.00 CHF", function(done){
     var transfer={
       amount:400,
-      wallet:userWallet.wid,
       type:'credit'
     }
     Wallets.transfer_create(giftWallet.wid,transfer).then(function (transfer,wallet) {
