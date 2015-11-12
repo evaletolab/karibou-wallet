@@ -135,7 +135,7 @@ describe("driver.mongoose.transfer", function(){
 
 
 
-    Wallets.transferWallet(userWallet.wid,card).then(function (wallet) {
+    Wallets.transferGiftcode(userWallet.wid,card).then(function (wallet) {
       setTimeout(function() {
         should.exist(wallet.card);
         should.exist(wallet.card.last4);
@@ -153,7 +153,7 @@ describe("driver.mongoose.transfer", function(){
       uid:1111112
     };
 
-    Wallets.transferWallet(userWallet.wid,card).then(undefined, function (error) {
+    Wallets.transferGiftcode(userWallet.wid,card).then(undefined, function (error) {
       setTimeout(function() {
         error.message.should.equal('The card can not be transfered')
         done();
@@ -167,7 +167,7 @@ describe("driver.mongoose.transfer", function(){
       number:giftWallet.card.number,
     };
 
-    Wallets.transferWallet(userWallet.wid,card).then(undefined, function (error) {
+    Wallets.transferGiftcode(userWallet.wid,card).then(undefined, function (error) {
       setTimeout(function() {
         error.message.should.equal('The card can not be transfered')
         done();

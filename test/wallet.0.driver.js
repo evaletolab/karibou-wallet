@@ -187,7 +187,7 @@ describe("driver.mongoose.wallet", function(){
       uid:12345
     };
 
-    Wallets.transferWallet(userWallet.wid,card).then(undefined, function (error) {
+    Wallets.transferGiftcode(userWallet.wid,card).then(undefined, function (error) {
       setTimeout(function() {
         error.message.should.equal('The wallet does not exist')
         done();
