@@ -81,6 +81,25 @@ describe("driver.mongoose.race.transaction", function(){
       });
   });
 
+
+  it("verify that wallet lock is well released", function(done){
+    var trans={
+      amount:30,
+      description:'hello',
+      captured:true
+    }
+
+    Wallets.transaction_charge(userWallet.wid,trans).then(function (trx,wallet) {
+      setTimeout(function() {
+        should.exist(trx);
+        wallet.balance.should.equal(500-300-30)
+        done();        
+      }, 0);
+    });
+
+
+  });
+
   // we loose the tr.id before
   it.skip("Refund 2 times the same captured transaction ", function(done){
     var transaction={
