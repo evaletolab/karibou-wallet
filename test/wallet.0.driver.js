@@ -104,9 +104,7 @@ describe("driver.mongoose.wallet", function(){
         wallet.balance.should.equal(0)
         wallet.card.name.should.equal('olivier-truc-lchose')
         done();
-      }, 0);
-    }).then(undefined, function (e) {
-      console.log('-------------',e)
+      }, 10);
     });
   });
 
@@ -160,7 +158,7 @@ describe("driver.mongoose.wallet", function(){
         should.exist(error);
         error.message.should.equal('La référence IBAN n\'est pas valide')
         done();
-      });
+      },0);
     });
   });
 
@@ -176,7 +174,7 @@ describe("driver.mongoose.wallet", function(){
         error.message.should.equal('This wallet does not belongs to this instance')
         config.option('apikey',apikey)
         done();
-      });
+      },0);
     });
   });
 
@@ -192,7 +190,7 @@ describe("driver.mongoose.wallet", function(){
         error.message.should.equal('The wallet does not exist')
         done();
       });
-    });
+    },0);
   });
 
 
@@ -205,7 +203,7 @@ describe("driver.mongoose.wallet", function(){
       setTimeout(function() {
         error.message.should.equal('Le montant sur votre compte est insuffisant !')
         done();
-      });
+      },0);
     })
   });
 

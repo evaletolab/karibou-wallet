@@ -25,6 +25,7 @@
     "js-money": "0.x",
     "mersenne": ">= 0.0.3",
     "mongoose": "4.x",
+    "q": "^1.4.1",
     "underscore": "1.8.x"
   },
   "devDependencies": {

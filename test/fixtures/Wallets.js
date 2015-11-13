@@ -19,6 +19,7 @@ exports.Wallets=[{
     name:'Demo Wallet',
     iban:'BE68539007547034'
   },
+  transfers_enabled:false,
   transfers: [],
   transactions: [],
   created: new Date('Mon Nov 09 2015 08:20:21 GMT+0100 (CET)'),
