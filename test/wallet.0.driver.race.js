@@ -47,7 +47,7 @@ describe("driver.mongoose.race.wallet", function(){
     this.timeout(2000);
     var races=[], wids={};
     races.push(Wallets.create(validWallet));
-    races.push(Wallets.create(validWallet));
+    races.push(Wallets.create(giftWallet));
     races.push(Wallets.create(validWallet));
     races.push(Wallets.create(giftWallet));
 
