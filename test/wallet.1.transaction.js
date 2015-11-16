@@ -95,7 +95,7 @@ describe("wallet.transaction", function(){
       description:'hello',
       captured:true
     }
-    karibou.charge.create(userWallet.wid,trans).then(function (transaction) {
+    karibou.charge.create(userWallet.wid,trans).then(function (transaction,w) {
       setTimeout(function() {
         _.extend(capturedTrans,transaction);
         transaction.id.substr(0,3).should.equal('ch_');
