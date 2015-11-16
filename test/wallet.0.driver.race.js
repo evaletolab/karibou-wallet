@@ -53,11 +53,13 @@ describe("driver.mongoose.race.wallet", function(){
 
 
     Q.all(races).then(function (wallets) {
-      wallets.forEach(function (w) {
-        wids[w.wid]=w;
-      })
-      Object.keys(wids).length.should.equal(4);
-      done();
+      setTimeout(function() {
+        wallets.forEach(function (w) {
+          wids[w.wid]=w;
+        })
+        Object.keys(wids).length.should.equal(4);
+        done();
+      }, 0);
     });
 
   });

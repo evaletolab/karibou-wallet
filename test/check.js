@@ -60,6 +60,14 @@ describe("check", function(){
     done();
   });
 
+  it("Mod-10 generate check padding",function (done) {
+    var number='12345';
+
+    var modified=check.mod10gen(number);
+    check.mod10check(modified).should.equal(modified)
+    done();
+  });
+
   it("Mod-10 test", function(done){
     // All test cards should pass (they are all valid numbers)
     Object.keys(validCardNos).forEach(function(card) {
