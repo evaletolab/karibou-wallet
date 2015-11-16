@@ -33,7 +33,8 @@ describe("wallet", function(){
   var giftWallet={
     id:'1111111',
     email:'giftcode@gg.com',
-    description:'this is a wallet for customer'
+    description:'this is a wallet for customer',
+    giftcode:true
   };
 
   var userWallet={
@@ -73,6 +74,15 @@ describe("wallet", function(){
     karibou.wallet.create(giftWallet).then(function (wallet) {
       setTimeout(function() {
         _.extend(giftWallet,wallet)
+        done();        
+      }, 0);
+    });
+  });
+
+  it("Find GIFTCODE wallet by card", function(done){
+    karibou.wallet.retrieveOneGift(giftWallet.card.number).then(function (wallet) {
+      setTimeout(function() {
+        wallet.wid.should.equal(giftWallet.wid)
         done();        
       }, 0);
     });
