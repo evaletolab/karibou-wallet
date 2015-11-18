@@ -65,6 +65,8 @@ describe("check", function(){
 
     var modified=check.mod10gen(number);
     check.mod10check(modified).should.equal(modified)
+    // var c='2015110200080017067673300000010';
+    // console.log(c+'3',check.mod10gen(c),check.mod10check(c+'5'))
     done();
   });
 
