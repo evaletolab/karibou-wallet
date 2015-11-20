@@ -122,7 +122,7 @@ describe("driver.mongoose.transaction.credit", function(){
     }
     Wallets.transaction_refund(userWallet.wid,transaction).then(function (trans) {
       setTimeout(function() {
-        trans.logs[trans.logs.length-1].should.containEql('refund 0.5 CHF at')
+        trans.logs[0].should.containEql('refund 0.5 CHF at')
         trans.id.should.equal(transaction.id);
         trans.amount.should.equal(100);
         trans.amount_refunded.should.equal(50);

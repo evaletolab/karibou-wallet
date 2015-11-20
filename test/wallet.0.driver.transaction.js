@@ -155,7 +155,7 @@ describe("driver.mongoose.transaction", function(){
     }
     Wallets.transaction_refund(userWallet.wid,transaction).then(function (trans,wallet) {
       setTimeout(function() {
-        trans.logs[trans.logs.length-1].should.containEql('refund 0.5 CHF at')
+        trans.logs[0].should.containEql('refund 0.5 CHF at')
         trans.id.should.equal(transaction.id);
         trans.amount.should.equal(100);
         trans.amount_refunded.should.equal(50);
@@ -193,7 +193,20 @@ describe("driver.mongoose.transaction", function(){
     })
   });
 
-  it("Creating a transaction will amount in wallet is insufficient", function(done){
+  it("Creating a transaction with negative amount ", function(done){
+    var transaction={
+      amount:-100,
+      description:'Hohoho'
+    }
+    Wallets.transaction_charge(userWallet.wid,transaction).then(undefined, function (error) {
+      setTimeout(function() {
+        error.message.should.containEql('Le montant n\'est pas valide')
+        done();
+      });
+    })
+  });
+
+  it("Creating a transaction with amount in wallet is insufficient", function(done){
     var transaction={
       amount:100,
       description:'Hohoho'
