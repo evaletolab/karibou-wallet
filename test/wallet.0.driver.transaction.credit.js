@@ -43,6 +43,10 @@ describe("driver.mongoose.transaction.credit", function(){
     amount_negative:100
   };
 
+  var noNegativeWallet={
+    id:'1111112'
+  };
+
   var capturedTrans={
 
   }
@@ -53,6 +57,16 @@ describe("driver.mongoose.transaction.credit", function(){
     Wallets.create(userWallet).then(function (wallet) {
       setTimeout(function() {
         _.extend(userWallet,wallet)
+        done();        
+      }, 0);
+    });
+  });
+
+  it("Retrieve a customer wallet without amount_negative", function(done){
+    this.timeout(2000);
+    Wallets.create(userWallet).then(function (wallet) {
+      setTimeout(function() {
+        _.extend(noNegativeWallet,wallet)
         done();        
       }, 0);
     });
@@ -82,6 +96,20 @@ describe("driver.mongoose.transaction.credit", function(){
       });
     })
   });
+
+  it("Creating new transaction with amount above the balance (in noNegativeWallet)", function(done){
+    var transaction={
+      amount:1000,
+      description:'hello'
+    }
+    Wallets.transaction_charge(noNegativeWallet.wid,transaction).then(undefined,function (error) {
+      setTimeout(function() {
+        error.message.should.equal('Le montant sur votre compte est insuffisant !')
+        done();
+      });
+    })
+  });
+
 
   it("Creating a valid transaction with status captured ", function(done){
     var trans={
