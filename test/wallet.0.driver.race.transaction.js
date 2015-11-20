@@ -110,15 +110,19 @@ describe("driver.mongoose.race.transaction", function(){
     races.push(Wallets.transaction_refund(userWallet.wid,transaction));
 
     Q.all(races).then(function (trx) {
-      should.not.exist(trx);
+      setTimeout(function() {
+        should.not.exist(trx);
+      }, 10);
     }).then(undefined,function (error) {
-      error.message.should.containEql('The wallet is already running another task')
+      setTimeout(function() {
+        error.message.should.containEql('The wallet is already running another task')
 
-      Wallets.retrieve(userWallet.wid).then(function (wallet) {
-        wallet.balance.should.equal(480);
-        userWallet.balance.should.equal(500)
-        done();
-      });
+        Wallets.retrieve(userWallet.wid).then(function (wallet) {
+          wallet.balance.should.equal(480);
+          userWallet.balance.should.equal(500)
+          done();
+        });        
+      }, 10);      
     });
 
   });

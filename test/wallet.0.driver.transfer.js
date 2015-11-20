@@ -93,6 +93,21 @@ describe("driver.mongoose.transfer", function(){
 
   });
 
+  it("Credit our GIFTCODE with negative amount ", function(done){
+    var transfer={
+      amount:-100,
+      wallet:'ddd',
+      description:'Hohoho',
+      type:'credit'
+    }
+    Wallets.transfer_create(userWallet.wid,transfer).then(undefined, function (error) {
+      setTimeout(function() {
+        error.message.should.containEql('Le montant n\'est pas valide')
+        done();
+      });
+    })
+  });  
+
   it("Credit our GIFTCODE with 4.00 CHF", function(done){
     var transfer={
       amount:400,
@@ -175,6 +190,35 @@ describe("driver.mongoose.transfer", function(){
     });
   });  
 
+  it("Credit our wallet from BANK ", function(done){
+    //
+    // CCP 11-117212-4
+    // CH3009000000+11-117212-4
+    // CH3009000000111172124
+    // wallet = 700 + tranfer 200
+    var transfer={
+      amount:200,
+      bank:{
+        iban:'CH3009000000111172124',
+        refid:'KOBE151116886203',
+        name:'TITULAIRE DUMIN RUE DE LA BOULANGERIE 3 1204',
+      },
+      description:'VIREMENT DU COMPTE 11-117212-4 BIO PAUL, TITULAIRE DUMIN RUE DE LA BOULANGERIE 3 1204 ',
+      type:'credit'
+    }
+    Wallets.transfer_create(userWallet.wid,transfer).then(function (transfer,wallet) {
+      setTimeout(function() {
+        should.exist(transfer.bank.name)
+        transfer.amount.should.equal(200);
+        transfer.bank.iban.should.equal('CH3009000000111172124')
+        transfer.bank.refid.should.equal('KOBE151116886203')
+        wallet.balance.should.equal(900)
+        wallet.transfers.length.should.equal(2)
+        done()
+      });
+    })    
+
+  });  
 
   it.skip("Cancel the previous transfert ", function(done){
   });

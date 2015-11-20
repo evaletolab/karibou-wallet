@@ -96,7 +96,7 @@ describe("driver.mongoose.transaction", function(){
       description:'hello',
       captured:true
     }
-    Wallets.transaction_charge(userWallet.wid,trans).then(function (transaction) {
+    Wallets.transaction_charge(userWallet.wid,trans).then(function (transaction,wallet) {
       setTimeout(function() {
         _.extend(capturedTrans,transaction);
         should.exist(transaction.description);
@@ -105,6 +105,8 @@ describe("driver.mongoose.transaction", function(){
         transaction.status.should.equal('capture')
         transaction.amount.should.equal(trans.amount)
         transaction.id.substr(0,3).should.equal('ch_');
+        should.exist(wallet)
+        wallet.balance.should.equal(400)
         done();
       });
     })
@@ -151,12 +153,15 @@ describe("driver.mongoose.transaction", function(){
     var transaction={
       amount:50,id:capturedTrans.id
     }
-    Wallets.transaction_refund(userWallet.wid,transaction).then(function (trans) {
+    Wallets.transaction_refund(userWallet.wid,transaction).then(function (trans,wallet) {
       setTimeout(function() {
         trans.logs[trans.logs.length-1].should.containEql('refund 0.5 CHF at')
         trans.id.should.equal(transaction.id);
         trans.amount.should.equal(100);
         trans.amount_refunded.should.equal(50);
+        should.exist(wallet)
+        wallet.balance.should.equal(450)
+
         Wallets.retrieve(userWallet.wid).then(function (wallet) {
           wallet.balance.should.equal(450);
           userWallet.balance.should.equal(500)
@@ -171,11 +176,13 @@ describe("driver.mongoose.transaction", function(){
       amount:400,
       description:'hello'
     }
-    Wallets.transaction_charge(userWallet.wid,trans).then(function (transaction) {
+    Wallets.transaction_charge(userWallet.wid,trans).then(function (transaction,wallet) {
       setTimeout(function() {
         _.extend(capturedTrans,transaction);
         transaction.status.should.equal('authorize')
         transaction.amount.should.equal(trans.amount)
+        should.exist(wallet)
+        wallet.balance.should.equal(450)
         //
         // wallet amount should be unchanged
         Wallets.retrieve(userWallet.wid).then(function (wallet) {
@@ -216,10 +223,13 @@ describe("driver.mongoose.transaction", function(){
     var transaction={
       amount:50,id:capturedTrans.id
     }
-    Wallets.transaction_capture(userWallet.wid,transaction).then(function (trans) {
+    Wallets.transaction_capture(userWallet.wid,transaction).then(function (trans,wallet) {
       setTimeout(function() {
         trans.status.should.equal('capture')
         trans.amount.should.equal(trans.amount)
+        should.exist(wallet)
+        wallet.balance.should.equal(400)
+
         //
         // wallet amount should be unchanged
         Wallets.retrieve(userWallet.wid).then(function (wallet) {
