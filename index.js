@@ -5,9 +5,6 @@
  * Licensed under GPL license (see LICENSE)
  */
 
-var account = require('./lib/wallet');
-var transaction = require('./lib/wallet.transaction');
-var transfer = require('./lib/wallet.transfer');
 var config = require('./lib/config');
 var check = require('./lib/check');
 
@@ -15,6 +12,10 @@ module.exports = function(_conf) {
 	if(_conf){
 		config.configure(_conf);
 	}
+	var account = require('./lib/wallet');
+	var transaction = require('./lib/wallet.transaction');
+	var transfer = require('./lib/wallet.transfer');
+
 	return {
 		configure:config.configure,
 		option:config.option,
