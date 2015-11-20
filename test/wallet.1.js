@@ -11,7 +11,7 @@ var dbtools = require('./fixtures/dbtools');
 describe("wallet", function(){
   var config = require('../lib/config');
   var tools =require('../lib/tools');
-  var karibou= require('../index');
+  var karibou= require('../index')();
   var _=require('underscore');
 
   before(function(done){

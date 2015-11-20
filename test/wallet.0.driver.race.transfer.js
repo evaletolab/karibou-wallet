@@ -92,14 +92,13 @@ describe("driver.mongoose.race.transfer", function(){
     races.push(Wallets.transferGiftcode(userWallet.wid,card));
 
     Q.all(races).then(function(wallet) {
-      console.log(wallet)
       should.not.exist(wallet)
     },function (error) {
       // this is important, race condition is trigged before the success transfer will' done
       setTimeout(function() {
         error.message.should.containEql('The wallet is already running another task')
         done();              
-      }, 70);
+      }, 200);
     })
 
   });
@@ -108,9 +107,12 @@ describe("driver.mongoose.race.transfer", function(){
 
   it("Verify wallet balance", function(done){
       Wallets.retrieve(userWallet.wid).then(function (wallet) {
-        wallet.balance.should.equal(900);
-        userWallet.balance.should.equal(500)
-        done();
+        setTimeout(function() {
+          wallet.balance.should.equal(900);
+          userWallet.balance.should.equal(500)
+          done();
+
+        }, 10);
       });
   });
 

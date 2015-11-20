@@ -11,8 +11,15 @@ var transfer = require('./lib/wallet.transfer');
 var config = require('./lib/config');
 var check = require('./lib/check');
 
-exports.configure = config.configure;
-exports.option = config.option;
-exports.wallet = new account.Wallet();
-exports.charge = new transaction.Transaction();
-exports.transfer = new transfer.Transfer();
+module.exports = function(_conf) {
+	if(_conf){
+		config.configure(_conf);
+	}
+	return {
+		configure:config.configure,
+		option:config.option,
+		wallet:new account.Wallet(),
+		charge:new transaction.Transaction(),
+		transfer:new transfer.Transfer()
+	};
+};
