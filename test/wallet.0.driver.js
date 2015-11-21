@@ -32,9 +32,10 @@ describe("driver.mongoose.wallet", function(){
   };
 
   var giftWallet={
-    id:'1111111',
+    id:'2222222',
     email:'giftcode@gg.com',
-    description:'this is a wallet for customer'
+    description:'this is a wallet for customer',
+    giftcode:true
   };
 
   var userWallet={
