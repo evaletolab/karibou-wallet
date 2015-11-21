@@ -47,6 +47,7 @@ describe("driver.mongoose.transaction.credit", function(){
     id:'1111112'
   };
 
+
   var capturedTrans={
 
   }
@@ -62,13 +63,15 @@ describe("driver.mongoose.transaction.credit", function(){
     });
   });
 
+
   it("Retrieve a customer wallet without amount_negative", function(done){
     this.timeout(2000);
-    Wallets.create(userWallet).then(function (wallet) {
+    Wallets.retrieve(userWallet.wid).then(function (wallet) {
       setTimeout(function() {
         _.extend(noNegativeWallet,wallet)
         done();        
       }, 0);
+    }).then(undefined,function (err) {
     });
   });
 

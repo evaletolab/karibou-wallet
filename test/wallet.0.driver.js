@@ -69,6 +69,19 @@ describe("driver.mongoose.wallet", function(){
     });
   });
 
+  it("Create multiple private wallet for a customer (ERROR)", function(done){
+    this.timeout(2000);
+    Wallets.create(validWallet).then(function (wallet) {
+      setTimeout(function() {
+        should.not.exist(wallet)
+      }, 0);
+    }).then(undefined,function (err) {
+        err.message.should.containEql('Impossible de créer un comtpe pour cet utilisateur')
+        done();        
+    });
+  });
+
+
   //
   // create a second walet that will be used as giftcode
   it("Create GIFTCODE wallet", function(done){
