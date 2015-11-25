@@ -59,14 +59,21 @@ describe("check", function(){
     check.mod10check(modified).should.equal(modified)
     done();
   });
+  it("Mod-10 generate UID",function (done) {
+    var number='2360346371241611'+'0';
+
+    var modified=check.mod10gen(number);
+    // ;
+    // check.mod10check('20151104007602173901315000000012').should.equal('20151104007602173901315000000012')
+    check.mod10check(modified).should.equal(modified)
+    done();
+  });  
 
   it("Mod-10 generate check padding",function (done) {
     var number='12345';
 
     var modified=check.mod10gen(number);
     check.mod10check(modified).should.equal(modified)
-    // var c='2015110200080017067673300000010';
-    // console.log(c+'3',check.mod10gen(c),check.mod10check(c+'5'))
     done();
   });
 
