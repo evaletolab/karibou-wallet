@@ -18,6 +18,8 @@ module.exports = function(_conf) {
 
 	return {
 		configure:config.configure,
+		mod10check:check.mod10check,
+		mod10gen:check.mod10gen,
 		option:config.option,
 		wallet:new account.Wallet(),
 		charge:new transaction.Transaction(),
