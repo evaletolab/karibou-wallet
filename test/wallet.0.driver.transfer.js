@@ -27,6 +27,10 @@ describe("driver.mongoose.transfer", function(){
 
   var userWallet={
     wid:'wa_1234567890'
+  },
+
+  otherWallet={
+    wid:'wa_1234567891'
   };
 
   var giftWallet={
@@ -93,10 +97,25 @@ describe("driver.mongoose.transfer", function(){
 
   });
 
-  it("Credit our GIFTCODE with negative amount ", function(done){
+  it("Credit our GIFTCODE with wrong recipient ", function(done){
     var transfer={
       amount:-100,
       wallet:'ddd',
+      description:'Hohoho',
+      type:'credit'
+    }
+    Wallets.transfer_create(userWallet.wid,transfer).then(undefined, function (error) {
+      setTimeout(function() {
+        error.message.should.containEql('Specified recipient doesn\'t exist')
+        done();
+      });
+    })
+  });  
+
+  it("Credit our GIFTCODE with negative amount ", function(done){
+    var transfer={
+      amount:-100,
+      wallet:'wa_1234567891',
       description:'Hohoho',
       type:'credit'
     }

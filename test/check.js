@@ -59,6 +59,15 @@ describe("check", function(){
     check.mod10check(modified).should.equal(modified)
     done();
   });
+
+  it.skip("Mod-10 generate BVR",function (done) {
+    var number='20120312004000081814154000000112'; // +'2'
+
+    var modified=check.mod10gen(number);
+    check.mod10check(number).should.equal(number)
+    done();
+  });    
+  
   it("Mod-10 generate UID",function (done) {
     var number='2360346371241611'+'0';
 

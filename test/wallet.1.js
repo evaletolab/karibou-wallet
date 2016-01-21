@@ -28,12 +28,16 @@ describe("wallet", function(){
     id:'2222222',
     email:'test@gg.com',
     description:'this is a wallet for customer'
+  },
+  otherWallet={
+    wid:'wa_1234567891'
   };
+
 
   var giftWallet={
     id:'1111111',
     email:'giftcode@gg.com',
-    description:'this is a wallet for customer',
+    description:'this is a GIFTCARD for customer',
     giftcode:true
   };
 
@@ -68,12 +72,31 @@ describe("wallet", function(){
     });
   });
 
+  it("Transfer 5 fr",function (done) {
+      var transfer={
+        wallet:otherWallet.wid,
+        amount:500,
+        description:'Crédit de 5.00 fr',
+        type:'credit'
+      };
+      karibou.transfer.create(userWallet.wid,transfer).then(function (wallet) {
+        done();
+      }).then(undefined,function(err){
+      });
+  })
   //
   // create a second walet that will be used as giftcode
   it("Create GIFTCODE wallet", function(done){
     karibou.wallet.create(giftWallet).then(function (wallet) {
+      _.extend(giftWallet,wallet)
+      var transfer={
+        amount:500,
+        description:'Crédit de 5.00 fr',
+        type:'credit'
+      };
+      return karibou.transfer.create(wallet.wid,transfer);
+    }).then(function (wallet) {
       setTimeout(function() {
-        _.extend(giftWallet,wallet)
         done();        
       }, 0);
     });
@@ -88,6 +111,68 @@ describe("wallet", function(){
     });
   });
 
+  it("Find all gift code",function (done) {
+    karibou.wallet.retrieveAllGift().then(function (wallets) {
+      setTimeout(function() {
+        wallets.length.should.equal(1)
+        done();        
+      }, 0);
+    });
+  });
+
+  it("Find all gift code created by giftcode@gg.com",function (done) {
+    karibou.wallet.retrieveAllGift({email:'giftcode@gg.com'}).then(function (wallets) {
+      setTimeout(function() {
+        wallets.length.should.equal(1)
+        done();        
+      }, 0);
+    });
+  });
+
+  it("Find all gift code created by pouet@gg.com",function (done) {
+    karibou.wallet.retrieveAllGift({email:'pouet@gg.com'}).then(function (wallets) {
+      setTimeout(function() {
+        wallets.length.should.equal(0)
+        done();        
+      }, 0);
+    });
+  });
+
+  it("Find all gift code with more than 4.9fr",function (done) {
+    karibou.wallet.retrieveAllGift({gt:4.9}).then(function (wallets) {
+      setTimeout(function() {
+        wallets.length.should.equal(1)
+        done();        
+      }, 0);
+    });
+  });
+
+  it("Find all gift code with more than 5fr",function (done) {
+    karibou.wallet.retrieveAllGift({gt:5.0}).then(function (wallets) {
+      setTimeout(function() {
+        wallets.length.should.equal(0)
+        done();        
+      }, 0);
+    });
+  });
+
+  it("Find all gift code with less than 5.0fr",function (done) {
+    karibou.wallet.retrieveAllGift({lt:5.0}).then(function (wallets) {
+      setTimeout(function() {
+        wallets.length.should.equal(0)
+        done();        
+      }, 0);
+    });
+  });
+
+  it("Find all wallet (not gift)",function (done) {
+    karibou.wallet.retrieveAll().then(function (wallets) {
+      setTimeout(function() {
+        //console.log(wallets)
+        done();        
+      }, 0);
+    });
+  });
 
 
   it.skip("Execute transaction with bogus card", function(done){
