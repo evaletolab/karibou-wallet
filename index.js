@@ -16,13 +16,15 @@ module.exports = function(_conf) {
 	var transaction = require('./lib/wallet.transaction');
 	var transfer = require('./lib/wallet.transfer');
 
+	var transaction=new transaction.Transaction();
 	return {
 		configure:config.configure,
 		mod10check:check.mod10check,
 		mod10gen:check.mod10gen,
 		option:config.option,
 		wallet:new account.Wallet(),
-		charge:new transaction.Transaction(),
+		charge:transaction,
+		transaction:transaction,
 		transfer:new transfer.Transfer()
 	};
 };

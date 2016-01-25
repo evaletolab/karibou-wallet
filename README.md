@@ -27,7 +27,7 @@ sandbox.
 ##Overview
 When using the karibou-wallet api, you basically deal with 3 separate concepts: 
 - wallet (the container of an amount of money),
- - wallet can be a giftcard, it's a kind of floating wallet, that means not yet attached to a user   
+ - wallet can be a giftcard, it's a kind of floating wallet, it has been designed to be transfered in to a personal wallet
 - transaction (helper to manage charges)
 - transfer (helper to transfer money from/to BANK/Wallet)
 

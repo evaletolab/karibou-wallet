@@ -156,6 +156,31 @@ describe("wallet.transaction", function(){
     })
   });
 
+
+  it("Re-Refund captured transaction is currently not authorised", function(done){
+    var transaction={
+      amount:40,id:capturedTrans.id
+    }
+    karibou.charge.refund(userWallet.wid,transaction).then(undefined,function (err) {
+      setTimeout(function () {
+        err.message.should.equal('Impossible de capturer une transaction avec le status refund')
+        done();
+      })
+    })
+  });
+
+  it("Get transaction details ", function(done){
+    karibou.transaction.info(userWallet.wid,capturedTrans.id).then(function (trans) {
+
+      setTimeout(function() {
+        should.not.exist(trans._id);
+        trans.status.should.equal('refund');
+        done();
+      });
+    })
+  });
+
+
   it("Creating a valid transaction with status authorised", function(done){
     var trans={
       amount:400,
