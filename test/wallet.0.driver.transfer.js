@@ -50,6 +50,7 @@ describe("driver.mongoose.transfer", function(){
     Wallets.retrieve(userWallet.wid).then(function (wallet) {
       setTimeout(function() {
         _.extend(userWallet,wallet)
+        //console.log('-----------------user',wallet.email,wallet.balance);
         done();        
       }, 0);
     });
@@ -62,6 +63,7 @@ describe("driver.mongoose.transfer", function(){
     Wallets.create(giftWallet).then(function (wallet) {
       setTimeout(function() {
         _.extend(giftWallet,wallet)
+        //console.log('-----------------gift',wallet.email,wallet.balance);
         done();        
       }, 0);
     });
@@ -70,10 +72,9 @@ describe("driver.mongoose.transfer", function(){
   it("Check if recipients are differents (wallet to wallet)", function(done){
     var transfer={
       amount:400,
-      wallet:giftWallet.wid,
       type:'debit',
     }
-    Wallets.transfer_create(giftWallet.wid,transfer).then(undefined, function (error) {
+    Wallets.transfer_create(giftWallet.wid,transfer,giftWallet.wid).then(undefined, function (error) {
       setTimeout(function() {
         error.message.should.equal('You have to specify a recipient different than your wallet')
         done()
@@ -88,9 +89,24 @@ describe("driver.mongoose.transfer", function(){
       amount:400,
       type:'debit',
     }
-    Wallets.transfer_create(giftWallet.wid,transfer).then(undefined, function (error) {
+    Wallets.transfer_create(giftWallet.wid,transfer,otherWallet.wid).then(undefined, function (error) {
       setTimeout(function() {
-        error.message.should.equal('Le montant sur votre compte est insuffisant !')
+        error.message.should.equal('Le montant sur la carte est insuffisant !')
+        done()
+      });
+    });
+
+  });
+
+
+  it("Debit our empty wallet throw an error", function(done){
+    var transfer={
+      amount:4700,
+      type:'debit',
+    }
+    Wallets.transfer_create(otherWallet.wid,transfer,giftWallet.wid).then(undefined, function (error) {
+      setTimeout(function() {
+        error.message.should.equal('Le montant sur le compte est insuffisant !')
         done()
       });
     });
@@ -100,13 +116,27 @@ describe("driver.mongoose.transfer", function(){
   it("Credit our GIFTCODE with wrong recipient ", function(done){
     var transfer={
       amount:-100,
-      wallet:'ddd',
       description:'Hohoho',
       type:'credit'
     }
-    Wallets.transfer_create(userWallet.wid,transfer).then(undefined, function (error) {
+    Wallets.transfer_create(userWallet.wid,transfer,'ddd').then(undefined, function (error) {
       setTimeout(function() {
-        error.message.should.containEql('Specified recipient doesn\'t exist')
+        error.message.should.containEql('La provenance bancaire de votre transfert ')
+        done();
+      });
+    })
+  });  
+
+
+  it("Credit our GIFTCODE with wrong source recipient ", function(done){
+    var transfer={
+      amount:-100,
+      description:'Hohoho',
+      type:'credit'
+    }
+    Wallets.transfer_create(userWallet.wid,transfer,'wa_1234567891').then(undefined, function (error) {
+      setTimeout(function() {
+        error.message.should.containEql('La provenance bancaire de votre transfert ')
         done();
       });
     })
@@ -115,11 +145,13 @@ describe("driver.mongoose.transfer", function(){
   it("Credit our GIFTCODE with negative amount ", function(done){
     var transfer={
       amount:-100,
-      wallet:'wa_1234567891',
       description:'Hohoho',
       type:'credit'
+    }, bank={
+      name:'stripe',
+      account:'123-12345-6'
     }
-    Wallets.transfer_create(userWallet.wid,transfer).then(undefined, function (error) {
+    Wallets.transfer_create(userWallet.wid,transfer,bank).then(undefined, function (error) {
       setTimeout(function() {
         error.message.should.containEql('Le montant n\'est pas valide')
         done();
@@ -131,11 +163,13 @@ describe("driver.mongoose.transfer", function(){
     var transfer={
       amount:400,
       type:'credit'
+    }, bank={
+      name:'stripe',
+      account:'123-12345-6'
     }
-    Wallets.transfer_create(giftWallet.wid,transfer).then(function (transfer,wallet) {
+    Wallets.transfer_create(giftWallet.wid,transfer,bank).then(function (transfer,wallet) {
       setTimeout(function() {
-        // console.log('------------',transfer)
-        // console.log('------------',wallet)
+        // console.log('-----------------gift',wallet.email,wallet.balance,transfer.id);
         wallet.balance.should.equal(400)
         wallet.transfers.length.should.equal(1)
         done()
@@ -143,16 +177,17 @@ describe("driver.mongoose.transfer", function(){
     })
   });
 
-  it("Debit our GIFTCODE with 4.00 CHF", function(done){
+  it("Debit our GIFTCODE with 2.00 CHF", function(done){
     var transfer={
       amount:200,
-      wallet:userWallet.wid,
       type:'debit'
+    }, bank={
+      name:'stripe',
+      account:'123-12345-6'
     }
-    Wallets.transfer_create(giftWallet.wid,transfer).then(function (transfer,wallet) {
+    Wallets.transfer_create(giftWallet.wid,transfer,bank).then(function (transfer,wallet) {
       setTimeout(function() {
-        // console.log('------------',transfer)
-        // console.log('------------',wallet)
+        //console.log('-----------------gift',wallet.email,wallet.balance);
         wallet.balance.should.equal(200)
         wallet.transfers.length.should.equal(2)
         done()
@@ -171,8 +206,10 @@ describe("driver.mongoose.transfer", function(){
 
     Wallets.transferGiftcode(userWallet.wid,card).then(function (wallet) {
       setTimeout(function() {
+        //console.log('-----------------user',wallet.email,wallet.balance);
         should.exist(wallet.card);
         should.exist(wallet.card.last4);
+        wallet.balance.should.equal(700)
         wallet.wid.should.equal(userWallet.wid);
         wallet.card.last4.should.equal(userWallet.card.number.substr(16-4));
         done();
@@ -180,20 +217,6 @@ describe("driver.mongoose.transfer", function(){
     });
   });
 
-  it("Credit our wallet with a giftcode", function(done){
-    var card={
-      name:'Paf Le chien',
-      number:giftWallet.card.number,
-      uid:1111112
-    };
-
-    Wallets.transferGiftcode(userWallet.wid,card).then(undefined, function (error) {
-      setTimeout(function() {
-        error.message.should.equal('The card can not be transfered')
-        done();
-      });
-    });
-  });  
 
   it("Credit our wallet with already credited giftcode ", function(done){
     var card={
@@ -203,44 +226,13 @@ describe("driver.mongoose.transfer", function(){
 
     Wallets.transferGiftcode(userWallet.wid,card).then(undefined, function (error) {
       setTimeout(function() {
-        error.message.should.equal('The card can not be transfered')
+        error.message.should.equal('Le montant sur la carte est insuffisant !')
+        // error.message.should.equal('The card can not be transfered')
         done();
       });
     });
   });  
 
-  it("Credit our wallet from BANK ", function(done){
-    //
-    // CCP 11-117212-4
-    // CH3009000000+11-117212-4
-    // CH3009000000111172124
-    // wallet = 700 + tranfer 200
-    var transfer={
-      amount:200,
-      bank:{
-        iban:'CH3009000000111172124',
-        refid:'KOBE151116886203',
-        name:'TITULAIRE DUMIN RUE DE LA BOULANGERIE 3 1204',
-      },
-      description:'VIREMENT DU COMPTE 11-117212-4 BIO PAUL, TITULAIRE DUMIN RUE DE LA BOULANGERIE 3 1204 ',
-      type:'credit'
-    }
-    Wallets.transfer_create(userWallet.wid,transfer).then(function (transfer,wallet) {
-      setTimeout(function() {
-        should.exist(transfer.bank.name)
-        transfer.amount.should.equal(200);
-        transfer.bank.iban.should.equal('CH3009000000111172124')
-        transfer.bank.refid.should.equal('KOBE151116886203')
-        wallet.balance.should.equal(900)
-        wallet.transfers.length.should.equal(2)
-        done()
-      });
-    })    
-
-  });  
-
-  it.skip("Cancel the previous transfert ", function(done){
-  });
 
   
   it.skip("Transfer (DEBIT) current wallet to bank account", function(done){

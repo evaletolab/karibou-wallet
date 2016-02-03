@@ -55,6 +55,7 @@ describe("driver.mongoose.wallet", function(){
         should.not.exist(wallet.available);
 
         should.exist(wallet.wid);
+        // should.exist(wallet.negative_balance);
         should.exist(wallet.email);
         should.exist(wallet.description);
         wallet.balance.should.equal(0);

@@ -57,11 +57,14 @@ describe("driver.mongoose.race.transfer", function(){
     var transfer={
       amount:400,
       type:'credit'
+    }, bank={
+      name:'stripe',
+      account:'123-12345-6'
     }
     var races=[], wids={};
-    races.push(Wallets.transfer_create(giftWallet.wid,transfer));
-    races.push(Wallets.transfer_create(giftWallet.wid,transfer));
-    races.push(Wallets.transfer_create(giftWallet.wid,transfer));
+    races.push(Wallets.transfer_create(giftWallet.wid,transfer,bank));
+    races.push(Wallets.transfer_create(giftWallet.wid,transfer,bank));
+    races.push(Wallets.transfer_create(giftWallet.wid,transfer,bank));
 
     Q.all(races).then(function(wallet) {
       should.not.exist(wallet)

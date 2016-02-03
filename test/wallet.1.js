@@ -58,6 +58,7 @@ describe("wallet", function(){
 
         should.exist(wallet.wid);
         should.exist(wallet.email);
+        should.exist(wallet.amount_negative);
         should.exist(wallet.description);
         wallet.balance.should.equal(0);
 
@@ -74,27 +75,33 @@ describe("wallet", function(){
 
   it("Transfer 5 fr",function (done) {
       var transfer={
-        wallet:otherWallet.wid,
         amount:500,
         description:'Crédit de 5.00 fr',
         type:'credit'
-      };
-      karibou.transfer.create(userWallet.wid,transfer).then(function (wallet) {
+    }, bank={
+      name:'stripe',
+      account:'123-12345-6'
+    };
+    karibou.transfer.create(userWallet.wid,transfer,bank).then(function (wallet) {
         done();
       }).then(undefined,function(err){
+        console.log(err)
       });
   })
   //
   // create a second walet that will be used as giftcode
   it("Create GIFTCODE wallet", function(done){
+    var transfer={
+      amount:500,
+      description:'Crédit de 5.00 fr',
+      type:'credit'
+    }, bank={
+      name:'stripe',
+      account:'123-12345-6'
+    };
     karibou.wallet.create(giftWallet).then(function (wallet) {
       _.extend(giftWallet,wallet)
-      var transfer={
-        amount:500,
-        description:'Crédit de 5.00 fr',
-        type:'credit'
-      };
-      return karibou.transfer.create(wallet.wid,transfer);
+      return karibou.transfer.create(wallet.wid,transfer,bank);
     }).then(function (wallet) {
       setTimeout(function() {
         done();        
