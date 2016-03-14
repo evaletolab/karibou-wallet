@@ -136,6 +136,24 @@ describe("wallet", function(){
     });
   });
 
+  it("Find all gift code by ID created by giftcode@gg.com",function (done) {
+    karibou.wallet.retrieveAllGift({id:'1111111'}).then(function (wallets) {
+      setTimeout(function() {
+        wallets.length.should.equal(1)
+        done();        
+      }, 0);
+    });
+  });
+
+  it("Find all gift code by unknow ID ",function (done) {
+    karibou.wallet.retrieveAllGift({id:'1111112'}).then(function (wallets) {
+      setTimeout(function() {
+        wallets.length.should.equal(0)
+        done();        
+      }, 0);
+    });
+  });
+
   it("Find all gift code created by pouet@gg.com",function (done) {
     karibou.wallet.retrieveAllGift({email:'pouet@gg.com'}).then(function (wallets) {
       setTimeout(function() {

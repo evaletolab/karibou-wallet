@@ -1,7 +1,7 @@
 {
   "name": "karibou-wallet",
   "description": "Simple Wallet API client library for Node.js",
-  "version": "0.5.20",
+  "version": "0.5.21",
   "author": "Olivier Evalet <evaleto@gmail.com>",
   "maintainers": [
     {

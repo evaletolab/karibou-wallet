@@ -72,14 +72,18 @@ describe("check", function(){
     var number='2360346371241611'+'0';
 
     var modified=check.mod10gen(number);
-    // ;
-    // check.mod10check('20151104007602173901315000000012').should.equal('20151104007602173901315000000012')
+    // 001141636433009254020220167;
+     // check.mod10check('201511040076021739013150000000120').should.equal('201511040076021739013150000000120')
+     // check.mod10check('0011416364330092540202201670').should.equal('0011416364330092540202201670')
     check.mod10check(modified).should.equal(modified)
     done();
   });  
 
   it("Mod-10 generate check padding",function (done) {
     var number='12345';
+
+    console.log('-------------',check.mod10gen('201511040076021739013150000000120'))
+    console.log('-------------',check.mod10gen('0011416364330092540202201670'))
 
     var modified=check.mod10gen(number);
     check.mod10check(modified).should.equal(modified)
