@@ -13,7 +13,7 @@ exports.Wallets=[{
   card:{ 
     last4: '5555',
     number: '4444444444445555',
-    expiry: new Date('Tue Nov 08 2016 23:59:00 GMT+0100 (CET)') 
+    expiry: new Date(Date.now()+3600000*24) 
   },
   external_account: {
     name:'Demo Wallet',
@@ -22,8 +22,8 @@ exports.Wallets=[{
   transfers_enabled:false,
   transfers: [],
   transactions: [],
-  created: new Date('Mon Nov 09 2015 08:20:21 GMT+0100 (CET)'),
-  updated: new Date('Mon Nov 09 2015 08:20:21 GMT+0100 (CET)'),
+  created: new Date(Date.now()-3600000*200),
+  updated: new Date(Date.now()-3600000*200),
   balance: 500,
   wid: 'wa_1234567890'
 },{
@@ -34,7 +34,7 @@ exports.Wallets=[{
   card:{ 
     last4: '8750',
     number: '1805531729538750',
-    expiry: new Date('Tue Nov 08 2016 23:59:00 GMT+0100 (CET)') 
+    expiry: new Date('Tue Nov 08 2017 23:59:00 GMT+0100 (CET)') 
   },
   external_account: {
     name:'Demo Wallet',
@@ -43,8 +43,8 @@ exports.Wallets=[{
   transfers_enabled:false,
   transfers: [],
   transactions: [],
-  created: new Date('Mon Nov 09 2015 08:20:21 GMT+0100 (CET)'),
-  updated: new Date('Mon Nov 09 2015 08:20:21 GMT+0100 (CET)'),
+  created: new Date(),
+  updated: new Date(),
   balance: 500,
   wid: 'wa_1234567891'  
 }];
