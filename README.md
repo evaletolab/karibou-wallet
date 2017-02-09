@@ -24,7 +24,10 @@ Do not run tests with your live processor. Make sure you are running in a
 sandbox.
 
 ## Wallet specification 1.0
-* [Here the full specification of our wallet needs](../../wiki/Wallet-1.0-specifications)
+* [specifications of our wallet with Stripe](../../wiki/Wallet-1.0-specifications)
+* [Here the full specification with Ethereum](../../wiki/Wallet-2.0-specifications)
+
+
 
 ##Overview
 When using the karibou-wallet api, you basically deal with 3 separate concepts: 
@@ -32,7 +35,7 @@ When using the karibou-wallet api, you basically deal with 3 separate concepts:
  - wallet can be a giftcard, it's a kind of floating wallet, it has been designed to be transfered in to a personal wallet
 - transaction (helper to manage charges)
 - smartcontract (multiple destinations)
-- transfer (helper to transfer money from/to BANK/Wallet)
+- transfer (helper to transfer money from/to BANK/Wallet [Stripe](https://stripe.com/docs/connect/special-case-transfers))
 
 
 
