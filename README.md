@@ -24,7 +24,7 @@ Do not run tests with your live processor. Make sure you are running in a
 sandbox.
 
 ## Wallet specification 1.0
-* [specifications of our wallet with Stripe](../../wiki/Wallet-1.0-specifications)
+* [specifications of our wallet with Stripe](../../wiki/Wallet-1.0-Specifications-(Stripe-backend))
 * [Here the full specification with Ethereum](../../wiki/Wallet-2.0-specifications)
 
 
