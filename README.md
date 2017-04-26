@@ -1,6 +1,11 @@
 ## Main usage
 The purpose of this project is to provide a simple and intiutive API to handle a simple Wallet manager for your e-commerce. It has bean designed to work on server side.
 
+## Prerequisites
+install node.js with [NVM](https://github.com/creationix/nvm) (required). 
+
+    nvm install 4.2.4
+    nvm use 4.2.4
 
 ## Installation
 From github,    
