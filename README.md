@@ -1,3 +1,7 @@
+[![David](https://img.shields.io/david/karibou-ch/kng-core.svg?style=flat)](https://david-dm.org/karibou-ch/kng-core)
+[![Build Status](https://travis-ci.org/karibou-ch/kng-core.svg?branch=master)](https://travis-ci.org/karibou-ch/kng-core)
+<a href="https://gitter.im/karibou-ch/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/Join Chat.svg" alt="Gitter chat" height="20"></a>
+
 ## Main usage
 The purpose of this project is to provide a simple and intiutive API to handle a simple Wallet manager for your e-commerce. It has bean designed to work on server side.
 
@@ -31,16 +35,19 @@ sandbox.
 ## Wallet specification 1.0
 * [specifications of our wallet with Stripe](../../wiki/Wallet-1.0-Specifications-(Stripe-backend))
 
-
-
-## Overview
+### Overview
 When using the karibou-wallet api, you basically deal with 3 separate concepts: 
 - wallet (the container of an amount of money),
- - wallet can be a giftcard, it's a kind of floating wallet, it has been designed to be transfered in to a personal wallet
 - transaction (helper to manage charges)
 - smartcontract (multiple destinations)
-- transfer (helper to transfer money from/to BANK/Wallet [Stripe](https://stripe.com/docs/connect/special-case-transfers))
+- transfer information
 
+
+## Authors & spcial thanks :heart:
+
+- David Gonzalez, https://github.com/GonzalD
+- Evalet Olivier, https://github.com/evaletolab
+- Noria Foukia Enseignante en mathématiques @HEPIA 
 
 
 ## License
