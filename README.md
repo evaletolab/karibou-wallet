@@ -1,5 +1,5 @@
-[![David](https://img.shields.io/david/karibou-ch/kng-core.svg?style=flat)](https://david-dm.org/karibou-ch/kng-core)
-[![Build Status](https://travis-ci.org/karibou-ch/kng-core.svg?branch=master)](https://travis-ci.org/karibou-ch/kng-core)
+[![David](https://img.shields.io/david/karibou-ch/karibou-wallet.svg?style=flat)](https://david-dm.org/karibou-ch/karibou-wallet)
+[![Build Status](https://travis-ci.org/karibou-ch/karibou-wallet.svg?branch=master)](https://travis-ci.org/karibou-ch/karibou-wallet)
 <a href="https://gitter.im/karibou-ch/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/Join Chat.svg" alt="Gitter chat" height="20"></a>
 
 ## Main usage
