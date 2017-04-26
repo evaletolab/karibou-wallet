@@ -4,8 +4,8 @@ The purpose of this project is to provide a simple and intiutive API to handle a
 ## Prerequisites
 install node.js with [NVM](https://github.com/creationix/nvm) (required). 
 
-    nvm install 4.2.4
-    nvm use 4.2.4
+    nvm install v6.9.5
+    nvm use v6.9.5
 
 ## Installation
 From github,    
