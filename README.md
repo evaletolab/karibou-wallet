@@ -30,11 +30,10 @@ sandbox.
 
 ## Wallet specification 1.0
 * [specifications of our wallet with Stripe](../../wiki/Wallet-1.0-Specifications-(Stripe-backend))
-* [Here the full specification with Ethereum](../../wiki/Wallet-2.0-specifications)
 
 
 
-##Overview
+## Overview
 When using the karibou-wallet api, you basically deal with 3 separate concepts: 
 - wallet (the container of an amount of money),
  - wallet can be a giftcard, it's a kind of floating wallet, it has been designed to be transfered in to a personal wallet
