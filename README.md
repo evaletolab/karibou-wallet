@@ -45,7 +45,7 @@ When using the karibou-wallet api, you basically deal with 3 separate concepts:
 
 ## Authors & spcial thanks :heart:
 
-- David Pate, https://github.com/<ton compte ici>
+- David Pate, https://github.com/patedavid
 - Evalet Olivier, https://github.com/evaletolab
 - Noria Foukia Enseignante en mathématiques @HEPIA 
 
