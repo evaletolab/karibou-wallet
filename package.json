@@ -40,6 +40,9 @@
   "engine": [
     "node >=1.x.0"
   ],
+  "scripts": {
+    "test": "./node_modules/.bin/mocha test"
+  },  
   "keywords": [
     "payment processing",
     "wallet"
