@@ -151,7 +151,7 @@ describe("driver.mongoose.wallet", function(){
 
   it("Update wallet with good expiry", function(done){
     var update={
-      expiry:'2/2017',
+      expiry:'2/2020',
     }
     Wallets.updateExpiry(userWallet.wid,update).then(function (wallet) {
       setTimeout(function() {
