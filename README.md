@@ -1,10 +1,9 @@
 [![David](https://img.shields.io/david/karibou-ch/karibou-wallet.svg?style=flat)](https://david-dm.org/karibou-ch/karibou-wallet)
 [![Build Status](https://travis-ci.org/karibou-ch/karibou-wallet.svg?branch=master)](https://travis-ci.org/karibou-ch/karibou-wallet)
-<a href="https://gitter.im/karibou-ch/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/Join Chat.svg" alt="Gitter chat" height="20"></a>
+[![Join the chat at https://gitter.im/karibou-ch/karibou-wallet](https://badges.gitter.im/karibou-ch/karibou-wallet.svg)](https://gitter.im/karibou-ch/karibou-wallet?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Main usage
 
-[![Join the chat at https://gitter.im/karibou-ch/karibou-wallet](https://badges.gitter.im/karibou-ch/karibou-wallet.svg)](https://gitter.im/karibou-ch/karibou-wallet?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 The purpose of this project is to provide a simple and intiutive API to handle a simple Wallet manager for your e-commerce. It has bean designed to work on server side.
 
 ## Prerequisites
