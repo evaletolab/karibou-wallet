@@ -1,7 +1,7 @@
 {
   "name": "karibou-wallet",
   "description": "Simple Wallet API client library for Node.js",
-  "version": "0.5.23",
+  "version": "2.0.0",
   "author": "Olivier Evalet <evaleto@gmail.com>",
   "maintainers": [
     {
@@ -9,10 +9,15 @@
       "email": "evaleto@gmail.com"
     }
   ],
-  "homepage": "http://github.com/evaletolab/karibou-wallet",
+  "files": [
+    "dist",
+    "index.js",
+    "index.d.ts"
+  ],
+  "homepage": "http://github.com/karibou-ch/karibou-wallet",
   "repository": {
     "type": "git",
-    "url": "https://github.com/evaletolab/karibou-wallet.git"
+    "url": "https://github.com/karibou-ch/karibou-wallet.git"
   },
   "licenses": [
     {
@@ -38,13 +43,14 @@
     "uglify-js": ">= 2.x.x"
   },
   "engine": [
-    "node >=1.x.0"
+    "node >=6.x.0"
   ],
   "scripts": {
-    "test": "./node_modules/.bin/mocha test"
+    "test": "./node_modules/.bin/mocha test",
+    "build": "rm -rf dist;./node_modules/.bin/tsc -p lib/"
   },  
   "keywords": [
-    "payment processing",
+    "marketplace payment processing",
     "wallet"
   ]
 }
