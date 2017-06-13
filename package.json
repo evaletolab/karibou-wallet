@@ -7,6 +7,10 @@
     {
       "name": "Olivier Evalet",
       "email": "evaleto@gmail.com"
+    },
+    {
+      "name": "David Pate",
+      "email": "pate.david1@gmail.com"
     }
   ],
   "files": [
@@ -33,9 +37,13 @@
     "mongoose": "4.x",
     "q": "^1.4.1",
     "underscore": "1.8.x",
-    "validator": "4.7.1"
+    "validator": "4.7.1",
+    "ts-node": "~2.0.0",
+    "tslint": "~4.5.0",
+    "typescript": "~2.2.0"
   },
   "devDependencies": {
+    "@types/node": "^7.0.29",
     "async": "^1.5.0",
     "mocha": ">= 1.x.x",
     "pow-mongoose-fixtures": "^0.3.0",
@@ -48,7 +56,7 @@
   "scripts": {
     "test": "./node_modules/.bin/mocha test",
     "build": "rm -rf dist;./node_modules/.bin/tsc -p lib/"
-  },  
+  },
   "keywords": [
     "marketplace payment processing",
     "wallet"
