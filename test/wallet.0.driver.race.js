@@ -9,7 +9,7 @@ var dbtools = require('./fixtures/dbtools');
 var db = require('mongoose');
 var Q=require('q');
 
-describe("driver.mongoose.race.wallet", function(){
+describe.skip("driver.mongoose.race.wallet", function(){
   var config = require('../lib/config');
   require('../lib/wallet.driver.mongoose.js');
   var Wallets=db.model('Wallets');

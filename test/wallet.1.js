@@ -8,7 +8,7 @@ var should = require('should');
 var db = require('mongoose');
 var dbtools = require('./fixtures/dbtools');
 
-describe("wallet", function(){
+describe.skip("wallet", function(){
   var config = require('../lib/config');
   var tools =require('../lib/tools');
   var karibou= require('../index')();
@@ -68,7 +68,7 @@ describe("wallet", function(){
         userWallet.wid=wallet.wid;
         userWallet.email=wallet.email;
         userWallet.card=wallet.card;
-        done();        
+        done();
       }, 0);
     });
   });
@@ -104,7 +104,7 @@ describe("wallet", function(){
       return karibou.transfer.create(wallet.wid,transfer,bank);
     }).then(function (wallet) {
       setTimeout(function() {
-        done();        
+        done();
       }, 0);
     });
   });
@@ -113,7 +113,7 @@ describe("wallet", function(){
     karibou.wallet.retrieveOneGift(giftWallet.card.number).then(function (wallet) {
       setTimeout(function() {
         wallet.wid.should.equal(giftWallet.wid)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -122,7 +122,7 @@ describe("wallet", function(){
     karibou.wallet.retrieveAllGift().then(function (wallets) {
       setTimeout(function() {
         wallets.length.should.equal(1)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -131,7 +131,7 @@ describe("wallet", function(){
     karibou.wallet.retrieveAllGift({email:'giftcode@gg.com'}).then(function (wallets) {
       setTimeout(function() {
         wallets.length.should.equal(1)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -140,7 +140,7 @@ describe("wallet", function(){
     karibou.wallet.retrieveAllGift({id:'1111111'}).then(function (wallets) {
       setTimeout(function() {
         wallets.length.should.equal(1)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -149,7 +149,7 @@ describe("wallet", function(){
     karibou.wallet.retrieveAllGift({id:'1111112'}).then(function (wallets) {
       setTimeout(function() {
         wallets.length.should.equal(0)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -158,7 +158,7 @@ describe("wallet", function(){
     karibou.wallet.retrieveAllGift({email:'pouet@gg.com'}).then(function (wallets) {
       setTimeout(function() {
         wallets.length.should.equal(0)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -167,7 +167,7 @@ describe("wallet", function(){
     karibou.wallet.retrieveAllGift({gt:4.9}).then(function (wallets) {
       setTimeout(function() {
         wallets.length.should.equal(1)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -176,7 +176,7 @@ describe("wallet", function(){
     karibou.wallet.retrieveAllGift({gt:5.0}).then(function (wallets) {
       setTimeout(function() {
         wallets.length.should.equal(0)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -185,7 +185,7 @@ describe("wallet", function(){
     karibou.wallet.retrieveAllGift({lt:5.0}).then(function (wallets) {
       setTimeout(function() {
         wallets.length.should.equal(0)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -194,7 +194,7 @@ describe("wallet", function(){
     karibou.wallet.retrieveAll().then(function (wallets) {
       setTimeout(function() {
         //console.log(wallets)
-        done();        
+        done();
       }, 0);
     });
   });
