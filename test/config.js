@@ -40,7 +40,7 @@ describe("config", function(){
     config.option('sandbox').should.equal(false);
     config.option('allowedCurrencies').should.not.be.empty;
     config.option('allowedCurrencies').should.containEql('CHF');
-    //config.option('allowMultipleSetOption').should.equal(false);
+    config.option('allowMultipleSetOption').should.equal(false);
     done()
   });
 
@@ -73,6 +73,7 @@ describe("config", function(){
       allowMultipleSetOption: true // to prevent locking up settings
     });
     config.option('apikey').should.equal(testKeys[0]);
+
     done()
   });
 
@@ -101,7 +102,7 @@ describe("config", function(){
     config.option('allowedCurrencies', []);
     config.option('allowedCurrencies').should.not.be.empty;
     config.option('allowedCurrencies').should.containEql('JPY');
-    
+
     done()
   });
 

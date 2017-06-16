@@ -6,7 +6,7 @@
 var assert = require('assert');
 var should = require('should');
 
-describe("tools", function(){
+describe.skip("tools", function(){
   var config = require('../lib/config');
   var tools=require('../lib/tools');
 

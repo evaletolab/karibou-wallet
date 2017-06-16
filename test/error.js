@@ -14,7 +14,7 @@ var test = exports;
 
 
 
-describe("error", function(){
+describe.skip("error", function(){
 
 
   before(function(done){
@@ -24,8 +24,8 @@ describe("error", function(){
 
   it("local WalletError", function(done){
     var error=new WalletError(
-      'system', 
-      'Currency not allowed', 
+      'system',
+      'Currency not allowed',
       '$'
     )
     error.message.should.containEql('Currency not allowed')

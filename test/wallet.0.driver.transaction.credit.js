@@ -11,7 +11,7 @@ var db = require('mongoose');
 //
 // credit could be authorized on a wallet
 // with the field amount_negative
-describe("driver.mongoose.transaction.credit", function(){
+describe.skip("driver.mongoose.transaction.credit", function(){
   var config = require('../lib/config');
   require('../lib/wallet.driver.mongoose.js');
   var Wallets=db.model('Wallets');
@@ -58,7 +58,7 @@ describe("driver.mongoose.transaction.credit", function(){
     Wallets.create(userWallet).then(function (wallet) {
       setTimeout(function() {
         _.extend(userWallet,wallet)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -69,7 +69,7 @@ describe("driver.mongoose.transaction.credit", function(){
     Wallets.retrieve(userWallet.wid).then(function (wallet) {
       setTimeout(function() {
         _.extend(noNegativeWallet,wallet)
-        done();        
+        done();
       }, 0);
     }).then(undefined,function (err) {
     });
@@ -82,7 +82,7 @@ describe("driver.mongoose.transaction.credit", function(){
     Wallets.create(giftWallet).then(function (wallet) {
       setTimeout(function() {
         _.extend(giftWallet,wallet)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -171,6 +171,6 @@ describe("driver.mongoose.transaction.credit", function(){
   });
 
 
-  
+
 
 });
