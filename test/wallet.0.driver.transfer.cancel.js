@@ -8,7 +8,7 @@ var should = require('should');
 var dbtools = require('./fixtures/dbtools');
 var db = require('mongoose');
 
-describe("driver.mongoose.transfer.cancel", function(){
+describe.skip("driver.mongoose.transfer.cancel", function(){
   var config = require('../lib/config');
   require('../lib/wallet.driver.mongoose.js');
   var Wallets=db.model('Wallets');
@@ -51,7 +51,7 @@ describe("driver.mongoose.transfer.cancel", function(){
       setTimeout(function() {
         _.extend(userWallet,wallet)
         // console.log('-----------------user',wallet.email,wallet.balance);
-        done();        
+        done();
       }, 0);
     });
   });
@@ -62,7 +62,7 @@ describe("driver.mongoose.transfer.cancel", function(){
       setTimeout(function() {
         _.extend(otherWallet,wallet)
         // console.log('-----------------other',wallet.email,wallet.balance);
-        done();        
+        done();
       }, 0);
     });
   });
@@ -73,14 +73,14 @@ describe("driver.mongoose.transfer.cancel", function(){
       refid:'order 0123456',
       description:'commande truc ',
       type:'credit'
-    }; 
+    };
 
     Wallets.transfer_create(userWallet.wid,transfer,otherWallet.wid).then(undefined,function (err) {
       setTimeout(function() {
         err.message.should.containEql('La provenance bancaire de votre transfert')
         done()
       });
-    })    
+    })
   });
 
 
@@ -95,7 +95,7 @@ describe("driver.mongoose.transfer.cancel", function(){
       refid:'KOBE151116886203',
       description:'VIREMENT DU COMPTE 11-117212-4 BIO PAUL, TITULAIRE DUMIN RUE DE LA BOULANGERIE 3 1204 ',
       type:'credit'
-    }; 
+    };
     var bank={
       iban:'CH3009000000111172124',
       name:'TITULAIRE DUMIN RUE DE LA BOULANGERIE 3 1204',
@@ -113,9 +113,9 @@ describe("driver.mongoose.transfer.cancel", function(){
         wallet.transfers.length.should.equal(1)
         done()
       });
-    })    
+    })
 
-  });  
+  });
 
   it("Cancel part (1 CHF) of the previous BANK transfert ", function(done){
     var cancel={
@@ -134,7 +134,7 @@ describe("driver.mongoose.transfer.cancel", function(){
         wallet.transfers.length.should.equal(1)
         done()
       });
-    })    
+    })
   });
 
   it("Cancel more than the previous BANK transfert ", function(done){
@@ -147,7 +147,7 @@ describe("driver.mongoose.transfer.cancel", function(){
         err.message.should.containEql('Le montant remboursé ne peut pas dépasser la valeur original')
         done()
       });
-    })    
+    })
   });
 
   it("Cancel total of the previous BANK transfert ", function(done){
@@ -163,7 +163,7 @@ describe("driver.mongoose.transfer.cancel", function(){
         wallet.balance.should.equal(500)
         done()
       });
-    })    
+    })
   });
 
   it("Debit user wallet to other wallet ", function(done){
@@ -172,7 +172,7 @@ describe("driver.mongoose.transfer.cancel", function(){
       refid:'order 0123456',
       description:'commande truc ',
       type:'debit'
-    }; 
+    };
     Wallets.transfer_create(userWallet.wid,transfer,otherWallet.wid).then(function (transfer,wallet,recipient) {
       setTimeout(function() {
         _.extend(validTransfer,transfer);
@@ -186,7 +186,7 @@ describe("driver.mongoose.transfer.cancel", function(){
 
         done()
       });
-    })    
+    })
 
   });
 
@@ -194,7 +194,7 @@ describe("driver.mongoose.transfer.cancel", function(){
     var transfer={
       amount:100,
       id:validTransfer.id
-    }; 
+    };
     Wallets.transfer_cancel(userWallet.wid,transfer).then(function (transfer,wallet,recipient) {
       setTimeout(function() {
         _.extend(validTransfer,transfer);
@@ -202,17 +202,17 @@ describe("driver.mongoose.transfer.cancel", function(){
         transfer.amount_reversed.should.equal(100);
         wallet.balance.should.equal(500)
         wallet.transfers.length.should.equal(2)
-        
+
         recipient.balance.should.equal(500)
         recipient.transfers.length.should.equal(1)
 
         done()
       });
-    })    
+    })
 
   });
 
-  
+
   it.skip("Transfer (DEBIT) current wallet to bank account", function(done){
   });
 
@@ -224,6 +224,6 @@ describe("driver.mongoose.transfer.cancel", function(){
   });
 
 
-  
+
 
 });

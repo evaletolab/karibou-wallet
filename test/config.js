@@ -4,7 +4,7 @@
  * Licensed under MIT license (see LICENSE)
  */
 
-var config = require('../lib/config');
+var config = require('../dist/config').Config;
 var helpers = require('./fixtures/helpers');
 var assert = require('assert');
 var should = require('should');
@@ -32,7 +32,10 @@ describe("config", function(){
     config.should.property('option');
     config.option('apikey').should.equal('123456789');
     config.option('currency').should.equal('CHF');
-    config.option('enabled').should.equal(true);
+    config.option('publickey').should.equal('pk_test_Rdm8xRlYnL9jTbntvs9e788l');
+    config.option('privatekey').should.equal('sk_test_7v4G5a18JptIOX2cbYAYMsun');
+    //config.option('enabled').should.equal(true);
+    config.option('isConfigured').should.equal(false);
     config.option('debug').should.equal(false);
     config.option('sandbox').should.equal(false);
     config.option('allowedCurrencies').should.not.be.empty;
@@ -52,7 +55,7 @@ describe("config", function(){
         apiUser: testKeys[2]
       });
     });
-    
+
     assert.throws(function() {
       config.configure({
         pspid: testKeys[0],
@@ -70,18 +73,11 @@ describe("config", function(){
       allowMultipleSetOption: true // to prevent locking up settings
     });
     config.option('apikey').should.equal(testKeys[0]);
+
     done()
   });
 
   it("Setting individual configuration options", function(done){
-
-    config.option('enabled', false);
-    config.option('enabled', true);
-    config.option('enabled').should.equal(true);
-
-    config.option('enabled', false);
-    config.option('enabled', 2); // truthy
-    config.option('enabled').should.equal(true);
 
     config.option('debug', false);
     config.option('debug', true);
@@ -96,7 +92,6 @@ describe("config", function(){
     config.option('currency', 'JPY');
     config.option('currency').should.equal('JPY');
 
-    config.option('sandbox', false);
     config.option('sandbox', 'yes'); // truthy
     config.option('sandbox').should.equal(true);
 
@@ -107,7 +102,6 @@ describe("config", function(){
     config.option('allowedCurrencies', []);
     config.option('allowedCurrencies').should.not.be.empty;
     config.option('allowedCurrencies').should.containEql('JPY');
-
 
     done()
   });
