@@ -148,13 +148,13 @@ export  class  Config {
         case 'secret':
         case 'publickey':
         case 'privatekey':
-          Config.settings[option] = value;
+          Config.settings[option] = value;break;
         case 'allowMaxAmount':
-          Config.settings[option] = parseFloat(value)
+          Config.settings[option] = parseFloat(value);break;
         case 'sandbox':
         case 'debug':
         case 'allowMultipleSetOption':
-          Config.settings[option] = Boolean(value);
+          Config.settings[option] = Boolean(value);break;
         case 'allowedCurrencies':
           if (!Array.isArray(value)) {
             //throw new WalletError('system', 'Allowed currencies must be an array', null);
