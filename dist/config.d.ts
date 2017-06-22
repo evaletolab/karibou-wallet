@@ -16,5 +16,5 @@ export declare class Config {
     static reset(): void;
     static debug(message: string): void;
     static configure(opts: any): void;
-    static option(option: any, value: any): any;
+    static option(option: any, value?: any): any;
 }
