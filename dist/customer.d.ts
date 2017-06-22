@@ -11,8 +11,8 @@ export declare class Customer {
     save(): string;
     addPayment(sourceData: Source, token?: string): any;
     updatePayment(sourceId: string, sourceData: Source): void;
-    removePayment(sourceId: string): void;
-    getPaymentList(paymentList: any[]): Promise<any[]>;
+    removePayment(sourceId: string): any;
+    getPaymentList(): Promise<any[]>;
     setStripePayment(sourceId: string): any;
     getChargeList(): any;
 }

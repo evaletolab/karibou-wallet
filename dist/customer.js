@@ -73,7 +73,6 @@ class Customer {
     updatePayment(sourceId, sourceData) {
         let index = -1;
         for (let i in this.sources) {
-            console.log(i);
             if (this.sources[i].sourceId == sourceId) {
                 index = Number(i);
                 break;
@@ -82,37 +81,48 @@ class Customer {
         this.sources[index] = sourceData;
     }
     removePayment(sourceId) {
-        let index = -1;
+        var index = -1;
         for (let i in this.sources) {
-            console.log(i);
             if (this.sources[i].sourceId == sourceId) {
                 index = Number(i);
                 break;
             }
         }
-        if (index !== -1)
-            this.sources.splice(index, 1);
+        if (index !== -1) {
+            return stripe.customers.deleteCard(this.stripeCusid, this.sources[index].sourceId).then(() => {
+                this.sources.splice(index, 1);
+            }).catch(parseError);
+        }
+        else {
+            throw new Error("Source ID not found");
+        }
     }
-    getPaymentList(paymentList) {
+    getPaymentList() {
+        var paymentList = [];
         var promiseList = [];
         for (let i in this.sources) {
-            promiseList.push(stripe.sources.retrieve(this.sources[i]).then((source) => {
-                paymentList.push(source);
-            }).catch(parseError));
+            switch (this.sources[i].type) {
+                case payments_enum_1.Payment.card:
+                    promiseList.push(stripe.customers.retrieveCard(this.stripeCusid, this.sources[i].sourceId).then((source) => {
+                        paymentList.push(source);
+                    }).catch(parseError));
+                    break;
+                default:
+                    throw new Error("Unknown payment type");
+            }
         }
-        return Promise.all(promiseList);
+        return Promise.all(promiseList).then(function () { return paymentList; });
     }
     setStripePayment(sourceId) {
-        let index = -1;
+        var index = -1;
         for (let i in this.sources) {
-            console.log(i);
             if (this.sources[i].sourceId == sourceId) {
                 index = Number(i);
                 break;
             }
         }
         if (index > -1) {
-            return stripe.customers.update(this.stripeCusid, { source: sourceId }).catch(parseError);
+            return stripe.customers.update(this.stripeCusid, { default_source: sourceId }).catch(parseError);
         }
         else {
             throw new Error("Source not present in the customer");

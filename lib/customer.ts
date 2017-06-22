@@ -1,3 +1,9 @@
+/**
+* #customer.ts
+* Copyright (c)2014, by David Pate <pate.david1@gmail.com>
+* Licensed under GPL license (see LICENSE)
+*/
+
 import { Config } from './config';
 import * as stripeLib from 'stripe';
 import { Payment } from './payments.enum';
@@ -11,7 +17,11 @@ export  class  Customer {
   private lastname:string;
   private firstname:string;
 
-
+  /**
+   * ## customer(json)
+   * @param {string} json Json serialized customer object
+   * @constructor
+   */
   constructor(json:string) {
     let tmp = JSON.parse(json);
     if ("email" in tmp) this.email = tmp.email;
@@ -34,6 +44,14 @@ export  class  Customer {
     this.map[Payment.bitcoin]='bitcoin';
   }
 
+  /**
+  * ## customer.create()
+  * Async constructor of customer
+  * @param {string} email
+  * @param {string} lastname
+  * @param {string} firstname
+  * @returns {Boolean} Check result
+  */
   static create(email:string, lastname:string, firstname:string) {
     return stripe.customers.create({
       description: lastname+' '+firstname,
@@ -49,12 +67,25 @@ export  class  Customer {
     }).catch(parseError);
   }
 
+  /**
+  * ## customer.save()
+  * Serialize the object into JSON
+  * @returns {string} Customer object in JSON
+  */
   save() {
     var json:string;
 
     return JSON.stringify(this);
   }
 
+  /**
+  * ## customer.addPayment()
+  * Add method of payment for the customer
+  * @param {Source} sourceData Source object containing all the informatio
+  * needed for payment creation
+  * @param {string} token Some source require token to be created
+  * @returns {any} Promise for the source creation
+  */
   addPayment(sourceData:Source, token?:string) {
     if (!(sourceData.type in this.map))
       throw new Error("Unknown payment type");
@@ -78,46 +109,78 @@ export  class  Customer {
     }
   }
 
+  /**
+  * ## customer.updatePayment()
+  * Update a payment's method of the customer
+  * @param {string} sourceId Stripe id of the source
+  * @param {Source} sourceData New data for the source
+  */
   updatePayment(sourceId:string, sourceData:Source) {
     let index:number=-1;
     for (let i in this.sources) {
-      console.log(i);
       if (this.sources[i].sourceId == sourceId) {
         index = Number(i);
         break;
       }
     }
     this.sources[index] = sourceData;
-    //return stripe.sources.update(sourceId,metadata).catch(parseError);
   }
 
+  /**
+  * ## customer.removePayment()
+  * Remove a payment's method of the customer
+  * @param {string} sourceId Stripe id of the source
+  * @returns {any} Promise on deletion of the source
+  */
   removePayment(sourceId:string) {
-    let index:number=-1;
+    var index:number=-1;
     for (let i in this.sources) {
-      console.log(i);
       if (this.sources[i].sourceId == sourceId) {
         index = Number(i);
         break;
       }
     }
-    if (index !== -1)
+
+    if (index !== -1) {
+      return stripe.customers.deleteCard(this.stripeCusid,this.sources[index].sourceId).then(() => {
         this.sources.splice(index, 1);
+      }).catch(parseError);
+    } else {
+      throw new Error("Source ID not found");
+    }
   }
 
-  getPaymentList(paymentList:any[]) {
+  /**
+  * ## customer.getPaymentList()
+  * List of all the payment's method of the customer
+  * @returns {any[]} Promise which return the list of payment available
+  */
+  getPaymentList() {
+    var paymentList:any[] = [];
     var promiseList:any[] = [];
     for (let i in this.sources) {
-      promiseList.push(stripe.sources.retrieve(this.sources[i]).then((source) => {
-        paymentList.push(source);
-      }).catch(parseError));
+      switch(this.sources[i].type) {
+        case Payment.card:
+          promiseList.push(stripe.customers.retrieveCard(this.stripeCusid,this.sources[i].sourceId).then((source) => {
+            paymentList.push(source);
+          }).catch(parseError));
+          break;
+        default:
+          throw new Error("Unknown payment type");
+      }
     }
-    return Promise.all(promiseList);
+    return Promise.all(promiseList).then(function () {return paymentList});
   }
 
+  /**
+  * ## customer.setStripePayment()
+  * Set the payment's method which is going to be used for the next charge
+  * @param {string} sourceId Stripe id of the source
+  * @returns {any} Promise
+  */
   setStripePayment(sourceId:string) {
-    let index:number=-1;
+    var index:number=-1;
     for (let i in this.sources) {
-      console.log(i);
       if (this.sources[i].sourceId == sourceId) {
         index = Number(i);
         break;
@@ -125,12 +188,17 @@ export  class  Customer {
     }
 
     if (index > -1) {
-      return stripe.customers.update(this.stripeCusid,{source: sourceId}).catch(parseError);
+      return stripe.customers.update(this.stripeCusid,{default_source: sourceId}).catch(parseError);
     } else {
       throw new Error("Source not present in the customer")
     }
   }
 
+  /**
+  * ## customer.getChargeList()
+  * Return the charge's list of the customer
+  * @returns {any} Promise which return the list of charges
+  */
   getChargeList() {
     return stripe.charges.list({ customer:this.stripeCusid }).catch(parseError);
   }
