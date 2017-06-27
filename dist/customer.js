@@ -71,13 +71,7 @@ class Customer {
         }
     }
     updatePayment(sourceId, sourceData) {
-        let index = -1;
-        for (let i in this.sources) {
-            if (this.sources[i].sourceId == sourceId) {
-                index = Number(i);
-                break;
-            }
-        }
+        var index = this.sources.findIndex(elem => elem.sourceId === sourceId);
         this.sources[index] = sourceData;
     }
     removePayment(sourceId) {
@@ -128,8 +122,11 @@ class Customer {
             throw new Error("Source not present in the customer");
         }
     }
-    getChargeList() {
-        return stripe.charges.list({ customer: this.stripeCusid }).catch(parseError);
+    getChargeList(limit = 10, chargeOffset) {
+        if (chargeOffset != undefined)
+            return stripe.charges.list({ customer: this.stripeCusid, limit: limit, starting_after: chargeOffset }).catch(parseError);
+        else
+            return stripe.charges.list({ customer: this.stripeCusid, limit: limit }).catch(parseError);
     }
 }
 exports.Customer = Customer;

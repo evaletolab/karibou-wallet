@@ -116,13 +116,7 @@ export  class  Customer {
   * @param {Source} sourceData New data for the source
   */
   updatePayment(sourceId:string, sourceData:Source) {
-    let index:number=-1;
-    for (let i in this.sources) {
-      if (this.sources[i].sourceId == sourceId) {
-        index = Number(i);
-        break;
-      }
-    }
+    var index = this.sources.findIndex(elem => elem.sourceId===sourceId)
     this.sources[index] = sourceData;
   }
 
@@ -196,11 +190,17 @@ export  class  Customer {
 
   /**
   * ## customer.getChargeList()
-  * Return the charge's list of the customer
+  * Return the charge's list of the customer, if chargeOffset is set, the list
+  * begin after it.
+  * @param {number} limit Number of charges to display (1-100) default = 10
+  * @param {any} chargeOffset Last object of the previous charge's list
   * @returns {any} Promise which return the list of charges
   */
-  getChargeList() {
-    return stripe.charges.list({ customer:this.stripeCusid }).catch(parseError);
+  getChargeList(limit:number=10, chargeOffset?:any) {
+    if (chargeOffset != undefined)
+      return stripe.charges.list({ customer:this.stripeCusid, limit:limit, starting_after:chargeOffset }).catch(parseError);
+    else
+      return stripe.charges.list({ customer:this.stripeCusid, limit:limit }).catch(parseError);
   }
 }
 

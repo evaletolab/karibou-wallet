@@ -87,12 +87,9 @@ describe("Class customer", function(){
       promises.push(cust.addPayment(sourceData,"tok_visa").catch(done));
       promises.push(cust.addPayment(sourceData,"tok_mastercard").catch(done));
 
-      Promise.all(promises).then(function () {
-        cust.getPaymentList().then(function (paymentList) {
-          paymentList.length.should.equal(2);
-          done();
-        }).catch(done);
-      }).catch(done);
+      Promise.all(promises)
+        .then(() => cust.getPaymentList())
+        .then((p1) => {p1.length.should.equal(2);done();});
     }).catch(done);
   });
 
@@ -105,16 +102,11 @@ describe("Class customer", function(){
       promises.push(cust.addPayment(sourceData,"tok_mastercard").catch(done));
       promises.push(cust.addPayment(sourceData,"tok_mastercard").catch(done));
 
-      Promise.all(promises).then(function () {
-        cust.getPaymentList().then(function (paymentList1) {
-          cust.removePayment(paymentList1[0].id).then(function () {
-            cust.getPaymentList().then(function (paymentList2) {
-              paymentList2.length.should.equal(2);
-              done();
-            }).catch(done);
-          }).catch(done);
-        }).catch(done);
-      }).catch(done);
+      Promise.all(promises)
+        .then(() => cust.getPaymentList())
+        .then((p1) => cust.removePayment(p1[0].id))
+        .then(() => cust.getPaymentList())
+        .then((p2) => {p2.length.should.equal(2); done();});
     }).catch(done);
   });
 
@@ -127,26 +119,17 @@ describe("Class customer", function(){
       promises.push(cust.addPayment(sourceData,"tok_visa").catch(done));
       promises.push(cust.addPayment(sourceData,"tok_mastercard").catch(done));
 
-      Promise.all(promises).then(function () {
-        stripe.customers.retrieve(cust.stripeCusid).then(function (custStripe) {
-          actualSource = custStripe.default_source;
-          cust.getPaymentList().then(function (paymentList1) {
-
-            for (let i in paymentList1) {
-              if (actualSource != paymentList1[i].id) {
-                cust.setStripePayment(paymentList1[i].id).then(function () {
-                  stripe.customers.retrieve(cust.stripeCusid).then(function (custStripe) {
-                    actualSource.should.not.be.equal(custStripe.default_source);
-                    done();
-                  }).catch(done);
-                }).catch(done);
-                break;
-              }
-            }
-
-          }).catch(done);
-        }).catch(done);
-      }).catch(done);
+      Promise.all(promises)
+        .then(() => stripe.customers.retrieve(cust.stripeCusid))
+        .then((custStripe1) => {actualSource = custStripe1.default_source;
+                                return cust.getPaymentList()})
+        .then((p1) => {for (let i in p1) {
+                          if (actualSource != p1[i].id)
+                              return cust.setStripePayment(p1[i].id);
+                      }})
+        .then(() => stripe.customers.retrieve(cust.stripeCusid))
+        .then((custStripe2) => {actualSource.should.not.be.equal(custStripe2.default_source);
+                                done();});
     }).catch(done);
 
   });

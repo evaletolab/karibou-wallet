@@ -14,7 +14,7 @@ export declare class Customer {
     removePayment(sourceId: string): any;
     getPaymentList(): Promise<any[]>;
     setStripePayment(sourceId: string): any;
-    getChargeList(): any;
+    getChargeList(limit?: number, chargeOffset?: any): any;
 }
 export interface Source {
     type: Payment;
