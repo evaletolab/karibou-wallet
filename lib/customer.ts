@@ -79,14 +79,14 @@ export  class  Customer {
   }
 
   /**
-  * ## customer.addPayment()
+  * ## customer.addMethod()
   * Add method of payment for the customer
   * @param {Source} sourceData Source object containing all the informatio
   * needed for payment creation
   * @param {string} token Some source require token to be created
   * @returns {any} Promise for the source creation
   */
-  addPayment(sourceData:Source, token?:string) {
+  addMethod(sourceData:Source, token?:string) {
     if (!(sourceData.type in this.map))
       throw new Error("Unknown payment type");
 
@@ -110,23 +110,23 @@ export  class  Customer {
   }
 
   /**
-  * ## customer.updatePayment()
+  * ## customer.updateMethod()
   * Update a payment's method of the customer
   * @param {string} sourceId Stripe id of the source
   * @param {Source} sourceData New data for the source
   */
-  updatePayment(sourceId:string, sourceData:Source) {
+  updateMethod(sourceId:string, sourceData:Source) {
     var index = this.sources.findIndex(elem => elem.sourceId===sourceId)
     this.sources[index] = sourceData;
   }
 
   /**
-  * ## customer.removePayment()
+  * ## customer.removeMethod()
   * Remove a payment's method of the customer
   * @param {string} sourceId Stripe id of the source
   * @returns {any} Promise on deletion of the source
   */
-  removePayment(sourceId:string) {
+  removeMethod(sourceId:string) {
     var index:number=-1;
     for (let i in this.sources) {
       if (this.sources[i].sourceId == sourceId) {
@@ -145,11 +145,11 @@ export  class  Customer {
   }
 
   /**
-  * ## customer.getPaymentList()
+  * ## customer.getMethodList()
   * List of all the payment's method of the customer
   * @returns {any[]} Promise which return the list of payment available
   */
-  getPaymentList() {
+  getMethodList() {
     var paymentList:any[] = [];
     var promiseList:any[] = [];
     for (let i in this.sources) {
@@ -167,12 +167,12 @@ export  class  Customer {
   }
 
   /**
-  * ## customer.setStripePayment()
+  * ## customer.setStripeMethod()
   * Set the payment's method which is going to be used for the next charge
   * @param {string} sourceId Stripe id of the source
   * @returns {any} Promise
   */
-  setStripePayment(sourceId:string) {
+  setStripeMethod(sourceId:string) {
     var index:number=-1;
     for (let i in this.sources) {
       if (this.sources[i].sourceId == sourceId) {

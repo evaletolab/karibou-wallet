@@ -48,7 +48,7 @@ describe("Class customer", function(){
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
       custCleanList.push(cust.stripeCusid);
       should.exist(cust);
-      cust.should.property('addPayment');
+      cust.should.property('addMethod');
       done();
     }).catch(done);
   });
@@ -56,21 +56,21 @@ describe("Class customer", function(){
   it("Construction of the customer with json", function(done) {
     var cust = new customer.Customer(JSON.stringify(jsonCust1));
     should.exist(cust);
-    cust.should.property('addPayment');
+    cust.should.property('addMethod');
     done();
   });
 
   it("Add payments methods using valid informations", function(done) {
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
       custCleanList.push(cust.stripeCusid);
-      cust.addPayment(sourceData,"tok_visa").then(done).catch(done);
+      cust.addMethod(sourceData,"tok_visa").then(done).catch(done);
     }).catch(done);
   });
 
   it("Add payments methods using invalid informations", function(done) {
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
       custCleanList.push(cust.stripeCusid);
-      cust.addPayment(sourceData, "tok_invalid").then(function () {
+      cust.addMethod(sourceData, "tok_invalid").then(function () {
         done("Error token invalid not detected");
       }).catch(function (err) {
         should.exist(err);
@@ -79,33 +79,33 @@ describe("Class customer", function(){
     }).catch(done);
   });
 
-  it("List all payments", function(done) {
+  it("List all payment's method", function(done) {
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
       custCleanList.push(cust.stripeCusid);
       var promises = [];
 
-      promises.push(cust.addPayment(sourceData,"tok_visa").catch(done));
-      promises.push(cust.addPayment(sourceData,"tok_mastercard").catch(done));
+      promises.push(cust.addMethod(sourceData,"tok_visa").catch(done));
+      promises.push(cust.addMethod(sourceData,"tok_mastercard").catch(done));
 
       Promise.all(promises)
-        .then(() => cust.getPaymentList())
+        .then(() => cust.getMethodList())
         .then((p1) => {p1.length.should.equal(2);done();});
     }).catch(done);
   });
 
-  it("Remove a payment", function(done) {
+  it("Remove a payment's method", function(done) {
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
       custCleanList.push(cust.stripeCusid);
       var promises = [];
       var promises2 = [];
-      promises.push(cust.addPayment(sourceData,"tok_visa").catch(done));
-      promises.push(cust.addPayment(sourceData,"tok_mastercard").catch(done));
-      promises.push(cust.addPayment(sourceData,"tok_mastercard").catch(done));
+      promises.push(cust.addMethod(sourceData,"tok_visa").catch(done));
+      promises.push(cust.addMethod(sourceData,"tok_mastercard").catch(done));
+      promises.push(cust.addMethod(sourceData,"tok_mastercard").catch(done));
 
       Promise.all(promises)
-        .then(() => cust.getPaymentList())
-        .then((p1) => cust.removePayment(p1[0].id))
-        .then(() => cust.getPaymentList())
+        .then(() => cust.getMethodList())
+        .then((p1) => cust.removeMethod(p1[0].id))
+        .then(() => cust.getMethodList())
         .then((p2) => {p2.length.should.equal(2); done();});
     }).catch(done);
   });
@@ -116,16 +116,16 @@ describe("Class customer", function(){
       var actualSource = "";
       var promises = [];
 
-      promises.push(cust.addPayment(sourceData,"tok_visa").catch(done));
-      promises.push(cust.addPayment(sourceData,"tok_mastercard").catch(done));
+      promises.push(cust.addMethod(sourceData,"tok_visa").catch(done));
+      promises.push(cust.addMethod(sourceData,"tok_mastercard").catch(done));
 
       Promise.all(promises)
         .then(() => stripe.customers.retrieve(cust.stripeCusid))
         .then((custStripe1) => {actualSource = custStripe1.default_source;
-                                return cust.getPaymentList()})
+                                return cust.getMethodList()})
         .then((p1) => {for (let i in p1) {
                           if (actualSource != p1[i].id)
-                              return cust.setStripePayment(p1[i].id);
+                              return cust.setStripeMethod(p1[i].id);
                       }})
         .then(() => stripe.customers.retrieve(cust.stripeCusid))
         .then((custStripe2) => {actualSource.should.not.be.equal(custStripe2.default_source);

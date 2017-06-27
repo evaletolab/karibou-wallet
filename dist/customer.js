@@ -48,7 +48,7 @@ class Customer {
         var json;
         return JSON.stringify(this);
     }
-    addPayment(sourceData, token) {
+    addMethod(sourceData, token) {
         if (!(sourceData.type in this.map))
             throw new Error("Unknown payment type");
         var newSourceData = Object.assign({}, sourceData);
@@ -70,11 +70,11 @@ class Customer {
             throw new Error("Unknown payment type");
         }
     }
-    updatePayment(sourceId, sourceData) {
+    updateMethod(sourceId, sourceData) {
         var index = this.sources.findIndex(elem => elem.sourceId === sourceId);
         this.sources[index] = sourceData;
     }
-    removePayment(sourceId) {
+    removeMethod(sourceId) {
         var index = -1;
         for (let i in this.sources) {
             if (this.sources[i].sourceId == sourceId) {
@@ -91,7 +91,7 @@ class Customer {
             throw new Error("Source ID not found");
         }
     }
-    getPaymentList() {
+    getMethodList() {
         var paymentList = [];
         var promiseList = [];
         for (let i in this.sources) {
@@ -107,7 +107,7 @@ class Customer {
         }
         return Promise.all(promiseList).then(function () { return paymentList; });
     }
-    setStripePayment(sourceId) {
+    setStripeMethod(sourceId) {
         var index = -1;
         for (let i in this.sources) {
             if (this.sources[i].sourceId == sourceId) {

@@ -9,11 +9,11 @@ export declare class Customer {
     constructor(json: string);
     static create(email: string, lastname: string, firstname: string): any;
     save(): string;
-    addPayment(sourceData: Source, token?: string): any;
-    updatePayment(sourceId: string, sourceData: Source): void;
-    removePayment(sourceId: string): any;
-    getPaymentList(): Promise<any[]>;
-    setStripePayment(sourceId: string): any;
+    addMethod(sourceData: Source, token?: string): any;
+    updateMethod(sourceId: string, sourceData: Source): void;
+    removeMethod(sourceId: string): any;
+    getMethodList(): Promise<any[]>;
+    setStripeMethod(sourceId: string): any;
     getChargeList(limit?: number, chargeOffset?: any): any;
 }
 export interface Source {
