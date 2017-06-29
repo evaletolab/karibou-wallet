@@ -126,7 +126,7 @@ export  class  Config {
  * @param {Object} value New value of the option
  * @returns {Object} Value of the `option` key
  */
-  static option(option, value) {
+  static option(option, value?) {
     if (typeof value !== 'undefined') {
       Config.debug('Setting Wallet key `' + option + '` to `' + value.toString() + '`');
 
