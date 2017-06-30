@@ -2,9 +2,6 @@
 * #account.ts
 * Copyright (c)2014, by David Pate <pate.david1@gmail.com>
 * Licensed under GPL license (see LICENSE)
-* TODO: class destination contient tous les account, les amount, un id
-* methode save
-* faire tests
 */
 
 import { Config } from './config';
