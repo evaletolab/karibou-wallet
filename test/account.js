@@ -67,4 +67,33 @@ describe("Class account", function(){
     done();
   });
 
+  it("List of transfer", function(done) {
+    var promiseList = [];
+    stripe.accounts.create(accData)
+      .then((stripeAccount) => account.Account.create(stripeAccount.id))
+      .then((acc3) => {
+        promiseList.push(stripe.charges.create({
+          amount: 2000,
+          currency: "chf",
+          source: "tok_visa",
+          destination: {
+            account: acc3.id,
+          },
+        }));
+
+        promiseList.push(stripe.charges.create({
+          amount: 3000,
+          currency: "chf",
+          source: "tok_visa",
+          destination: {
+            account: acc3.id,
+          },
+        }));
+
+        Promise.all(promiseList)
+          .then(acc3.getTransferList(10))
+          .then((transferList) => {transferList.length.should.equal(2); done();});
+      }).catch(done);
+    });
+
 });

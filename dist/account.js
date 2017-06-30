@@ -10,18 +10,12 @@ class Account {
             this.email = tmp.email;
         else
             throw new Error("Missing parameter: email");
-        if ("lastname" in tmp)
-            this.lastname = tmp.lastname;
-        else
-            throw new Error("Missing parameter: lastname");
-        if ("firstname" in tmp)
-            this.firstname = tmp.firstname;
-        else
-            throw new Error("Missing parameter: firstname");
         if ("stripeAccid" in tmp)
             this.stripeAccid = tmp.stripeAccid;
         else
             throw new Error("Missing parameter: Stripe account id");
+        this.lastname = tmp.lastname;
+        this.firstname = tmp.firstname;
         this.address = tmp.address;
         this.city = tmp.city;
         this.postalCode = tmp.postalCode;
@@ -47,9 +41,9 @@ class Account {
     }
     getTransferList(limit = 10, transferOffset) {
         if (transferOffset != undefined)
-            return stripe.transfers.list({ account: this.stripeAccid, limit: limit, starting_after: transferOffset }).catch(parseError);
+            return stripe.transfers.list({ destination: this.stripeAccid, limit: limit, starting_after: transferOffset }).catch(parseError);
         else
-            return stripe.transfers.list({ account: this.stripeAccid, limit: limit }).catch(parseError);
+            return stripe.transfers.list({ destination: this.stripeAccid, limit: limit }).catch(parseError);
     }
 }
 exports.Account = Account;
