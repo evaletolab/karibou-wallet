@@ -53,7 +53,7 @@ describe("Class account", function(){
       .then((stripeAccount) => account.Account.create(stripeAccount.id))
       .then((acc1) => {
         accObject = acc1;
-        accCleanList.push(acc1.stripeAccid);
+        accCleanList.push(acc1.id);
         should.exist(acc1);
         acc1.should.property('getTransferList');
         done();
@@ -61,8 +61,8 @@ describe("Class account", function(){
   });
 
   it("Construction of the account with json", function(done) {
-    var acc2 = new account.Account(accObject.save());
-    accCleanList.push(acc2.stripeAccid);
+    var acc2 = new account.Account(JSON.parse(accObject.save()));
+    accCleanList.push(acc2.id);
     should.exist(acc2);
     acc2.should.property('getTransferList');
     done();
@@ -73,7 +73,7 @@ describe("Class account", function(){
     stripe.accounts.create(accData)
       .then((stripeAccount) => account.Account.create(stripeAccount.id))
       .then((acc3) => {
-        accCleanList.push(acc3.stripeAccid);
+        accCleanList.push(acc3.id);
         promiseList.push(stripe.charges.create({
           amount: 2000,
           currency: "chf",

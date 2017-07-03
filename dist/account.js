@@ -4,27 +4,26 @@ const config_1 = require("./config");
 const stripeLib = require("stripe");
 const stripe = stripeLib(config_1.Config.option('privatekey'));
 class Account {
-    constructor(json) {
-        let tmp = JSON.parse(json);
-        if ("email" in tmp)
-            this.email = tmp.email;
+    constructor(params) {
+        if ("email" in params)
+            this.email = params.email;
         else
             throw new Error("Missing parameter: email");
-        if ("stripeAccid" in tmp)
-            this.stripeAccid = tmp.stripeAccid;
+        if ("id" in params)
+            this.id = params.id;
         else
             throw new Error("Missing parameter: Stripe account id");
-        this.lastname = tmp.lastname;
-        this.firstname = tmp.firstname;
-        this.address = tmp.address;
-        this.city = tmp.city;
-        this.postalCode = tmp.postalCode;
-        this.company = tmp.company;
+        this.lastname = params.lastname;
+        this.firstname = params.firstname;
+        this.address = params.address;
+        this.city = params.city;
+        this.postalCode = params.postalCode;
+        this.company = params.company;
     }
-    static create(stripeAccid) {
-        return stripe.accounts.retrieve(stripeAccid).then((account) => {
+    static create(id) {
+        return stripe.accounts.retrieve(id).then((account) => {
             var custJson = JSON.stringify({
-                stripeAccid: account.id,
+                id: account.id,
                 email: account.email,
                 lastname: account.legal_entity.last_name,
                 firstname: account.legal_entity.first_name,
@@ -33,7 +32,7 @@ class Account {
                 city: account.legal_entity.address.city,
                 company: account.business_name
             });
-            return new Account(custJson);
+            return new Account(JSON.parse(custJson));
         }).catch(parseError);
     }
     save() {
@@ -41,9 +40,9 @@ class Account {
     }
     getTransferList(limit = 10, transferOffset) {
         if (transferOffset != undefined)
-            return stripe.transfers.list({ destination: this.stripeAccid, limit: limit, starting_after: transferOffset }).catch(parseError);
+            return stripe.transfers.list({ destination: this.id, limit: limit, starting_after: transferOffset }).catch(parseError);
         else
-            return stripe.transfers.list({ destination: this.stripeAccid, limit: limit }).catch(parseError);
+            return stripe.transfers.list({ destination: this.id, limit: limit }).catch(parseError);
     }
 }
 exports.Account = Account;

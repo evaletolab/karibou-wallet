@@ -9,7 +9,7 @@ import * as stripeLib from 'stripe';
 const stripe = stripeLib(Config.option('privatekey'));
 
 export  class  Account {
-  private stripeAccid:string;
+  private id:string;
   private email:string;
   private lastname:string;
   private firstname:string;
@@ -20,36 +20,35 @@ export  class  Account {
 
   /**
    * ## account(json)
-   * @param {string} json Json serialized account object
+   * @param {any} params Json serialized account object
    * @constructor
    */
-  private constructor(json:string) {
-    let tmp = JSON.parse(json);
-    if ("email" in tmp) this.email = tmp.email;
+  private constructor(params:any) {
+    if ("email" in params) this.email = params.email;
     else throw new Error("Missing parameter: email");
 
-    if ("stripeAccid" in tmp) this.stripeAccid = tmp.stripeAccid;
+    if ("id" in params) this.id = params.id;
     else throw new Error("Missing parameter: Stripe account id");
 
-    this.lastname = tmp.lastname;
-    this.firstname = tmp.firstname;
-    this.address = tmp.address;
-    this.city = tmp.city;
-    this.postalCode = tmp.postalCode;
-    this.company = tmp.company;
+    this.lastname = params.lastname;
+    this.firstname = params.firstname;
+    this.address = params.address;
+    this.city = params.city;
+    this.postalCode = params.postalCode;
+    this.company = params.company;
   }
 
   /**
   * ## account.create()
   * https://stripe.com/docs/connect/standard-accounts
   * Async constructor of account
-  * @param {string} stripeAccid
+  * @param {string} id
   * @returns {any} Promise for the creation of the account object
   */
-  static create(stripeAccid:string) {
-    return stripe.accounts.retrieve(stripeAccid).then((account) => {
+  static create(id:string) {
+    return stripe.accounts.retrieve(id).then((account) => {
       var custJson = JSON.stringify({
-        stripeAccid:account.id,
+        id:account.id,
         email:account.email,
         lastname:account.legal_entity.last_name,
         firstname:account.legal_entity.first_name,
@@ -58,7 +57,7 @@ export  class  Account {
         city:account.legal_entity.address.city,
         company:account.business_name
       });
-      return new Account(custJson);
+      return new Account(JSON.parse(custJson));
     }).catch(parseError);
   }
 
@@ -81,9 +80,9 @@ export  class  Account {
   */
   getTransferList(limit:number=10, transferOffset?:any) {
     if (transferOffset != undefined)
-      return stripe.transfers.list({ destination:this.stripeAccid, limit:limit, starting_after:transferOffset }).catch(parseError);
+      return stripe.transfers.list({ destination:this.id, limit:limit, starting_after:transferOffset }).catch(parseError);
     else
-      return stripe.transfers.list({ destination:this.stripeAccid, limit:limit }).catch(parseError);
+      return stripe.transfers.list({ destination:this.id, limit:limit }).catch(parseError);
   }
 }
 

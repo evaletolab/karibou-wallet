@@ -1,5 +1,5 @@
 export declare class Account {
-    private stripeAccid;
+    private id;
     private email;
     private lastname;
     private firstname;
@@ -7,8 +7,8 @@ export declare class Account {
     private postalCode;
     private city;
     private company;
-    private constructor(json);
-    static create(stripeAccid: string): any;
+    private constructor(params);
+    static create(id: string): any;
     save(): string;
     getTransferList(limit?: number, transferOffset?: any): any;
 }
