@@ -1,6 +1,6 @@
 import { Payment } from './payments.enum';
 export declare class Customer {
-    private stripeCusid;
+    private id;
     private sources;
     private map;
     private email;
@@ -15,6 +15,7 @@ export declare class Customer {
     getMethodList(): Promise<any[]>;
     setStripeMethod(sourceId: string): any;
     getChargeList(limit?: number, chargeOffset?: any): any;
+    getId(): string;
 }
 export interface Source {
     type: Payment;

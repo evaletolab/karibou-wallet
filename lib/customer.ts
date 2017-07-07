@@ -10,7 +10,7 @@ import { Payment } from './payments.enum';
 const stripe = stripeLib(Config.option('privatekey'));
 
 export  class  Customer {
-  private stripeCusid:string;
+  private id:string;
   private sources:Source[];
   private map:{};
   private email:string;
@@ -33,9 +33,9 @@ export  class  Customer {
     if ("firstname" in tmp) this.firstname = tmp.firstname;
     else throw new Error("Missing parameter: firstname");
 
-    this.stripeCusid = null;
+    this.id = null;
     this.sources = [];
-    if ("stripeCusid" in tmp) this.stripeCusid = tmp.stripeCusid;
+    if ("id" in tmp) this.id = tmp.id;
     if ("sources" in tmp) this.sources = tmp.sources;
 
     this.map={};
@@ -61,7 +61,7 @@ export  class  Customer {
         email:email,
         lastname:lastname,
         firstname:firstname,
-        stripeCusid:customerStripe.id
+        id:customerStripe.id
       });
       return new Customer(custJson);
     }).catch(parseError);
@@ -92,7 +92,7 @@ export  class  Customer {
 
     var newSourceData = {...sourceData}; // copy sourceData
     if (newSourceData.type == Payment.card) {
-      return stripe.customers.createSource(this.stripeCusid,{ source: token }).then((card) => {
+      return stripe.customers.createSource(this.id,{ source: token }).then((card) => {
         var newCard:Card = {
           type:Payment.card,
           sourceId:card.id,
@@ -136,7 +136,7 @@ export  class  Customer {
     }
 
     if (index !== -1) {
-      return stripe.customers.deleteCard(this.stripeCusid,this.sources[index].sourceId).then(() => {
+      return stripe.customers.deleteCard(this.id,this.sources[index].sourceId).then(() => {
         this.sources.splice(index, 1);
       }).catch(parseError);
     } else {
@@ -155,7 +155,7 @@ export  class  Customer {
     for (let i in this.sources) {
       switch(this.sources[i].type) {
         case Payment.card:
-          promiseList.push(stripe.customers.retrieveCard(this.stripeCusid,this.sources[i].sourceId).then((source) => {
+          promiseList.push(stripe.customers.retrieveCard(this.id,this.sources[i].sourceId).then((source) => {
             paymentList.push(source);
           }).catch(parseError));
           break;
@@ -182,7 +182,7 @@ export  class  Customer {
     }
 
     if (index > -1) {
-      return stripe.customers.update(this.stripeCusid,{default_source: sourceId}).catch(parseError);
+      return stripe.customers.update(this.id,{default_source: sourceId}).catch(parseError);
     } else {
       throw new Error("Source not present in the customer")
     }
@@ -198,9 +198,17 @@ export  class  Customer {
   */
   getChargeList(limit:number=10, chargeOffset?:any) {
     if (chargeOffset != undefined)
-      return stripe.charges.list({ customer:this.stripeCusid, limit:limit, starting_after:chargeOffset }).catch(parseError);
+      return stripe.charges.list({ customer:this.id, limit:limit, starting_after:chargeOffset }).catch(parseError);
     else
-      return stripe.charges.list({ customer:this.stripeCusid, limit:limit }).catch(parseError);
+      return stripe.charges.list({ customer:this.id, limit:limit }).catch(parseError);
+  }
+
+  /**
+  * ## customer.getId()
+  * @returns {string} Stripe ID of the customer
+  */
+  getId() {
+    return this.id;
   }
 }
 
