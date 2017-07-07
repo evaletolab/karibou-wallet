@@ -89,6 +89,24 @@ class Transaction {
             }).catch(parseError);
         }
     }
+    isAuthorized() {
+        return this.authorized;
+    }
+    isCaptured() {
+        return this.captured;
+    }
+    isCanceled() {
+        return this.canceled;
+    }
+    getTransactionAmount() {
+        return this.amount;
+    }
+    getAmountRefunded() {
+        return this.amountRefunded;
+    }
+    getId() {
+        return this.id;
+    }
 }
 exports.Transaction = Transaction;
 function parseError(err) {

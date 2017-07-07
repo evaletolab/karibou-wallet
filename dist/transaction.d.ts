@@ -16,6 +16,12 @@ export declare class Transaction {
     capture(): any;
     cancel(): void;
     refund(amount?: number): any;
+    isAuthorized(): boolean;
+    isCaptured(): boolean;
+    isCanceled(): boolean;
+    getTransactionAmount(): number;
+    getAmountRefunded(): number;
+    getId(): string;
 }
 export interface Destination {
     account: Account;

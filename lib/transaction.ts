@@ -153,6 +153,53 @@ export  class  Transaction {
     }
   }
 
+  /**
+  * ## transaction.isAuthorized()
+  * @returns {boolean}
+  */
+  isAuthorized() {
+    return this.authorized;
+  }
+
+  /**
+  * ## transaction.isCaptured()
+  * @returns {boolean}
+  */
+  isCaptured() {
+    return this.captured;
+  }
+
+  /**
+  * ## transaction.isCanceled()
+  * @returns {boolean}
+  */
+  isCanceled() {
+    return this.canceled;
+  }
+
+  /**
+  * ## transaction.getTransactionAmount()
+  * @returns {number} Return the amount of the transaction in cents
+  */
+  getTransactionAmount() {
+    return this.amount;
+  }
+
+  /**
+  * ## transaction.getAmountRefunded()
+  * @returns {number} Return the amount of the transaction which have been refunded in cents
+  */
+  getAmountRefunded() {
+    return this.amountRefunded;
+  }
+
+  /**
+  * ## transaction.getId()
+  * @returns {string} Return the charge id
+  */
+  getId() {
+    return this.id;
+  }
 }
 
 function parseError(err) {
