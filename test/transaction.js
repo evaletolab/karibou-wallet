@@ -1,5 +1,5 @@
 /**
- * Daimyo - unit tests for transaction module
+ * Unit tests for transaction module
  * Author: David Pate
  * Date: july 2017
  */

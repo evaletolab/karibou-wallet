@@ -205,9 +205,3 @@ export  class  Transaction {
 function parseError(err) {
   throw new Error(err);
 }
-
-export interface Destination {
-  account:Account;
-  amount:number;
-  transferId:string;
-}

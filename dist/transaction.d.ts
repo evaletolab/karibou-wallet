@@ -23,8 +23,3 @@ export declare class Transaction {
     getAmountRefunded(): number;
     getId(): string;
 }
-export interface Destination {
-    account: Account;
-    amount: number;
-    transferId: string;
-}
