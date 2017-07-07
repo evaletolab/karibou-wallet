@@ -26,7 +26,7 @@ describe("Class customer", function(){
     email:"test@email.com",
     lastname:"Pate",
     firstname:"David",
-    stripeCusid:"cus_AtGotgoAdqWrpg"
+    id:"cus_AtGotgoAdqWrpg"
   };
 
   before(function(done){
@@ -46,7 +46,7 @@ describe("Class customer", function(){
   // START TESTING
   it("Construction of the customer", function(done) {
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
-      custCleanList.push(cust.stripeCusid);
+      custCleanList.push(cust.id);
       should.exist(cust);
       cust.should.property('addMethod');
       done();
@@ -62,14 +62,14 @@ describe("Class customer", function(){
 
   it("Add payments methods using valid informations", function(done) {
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
-      custCleanList.push(cust.stripeCusid);
+      custCleanList.push(cust.id);
       cust.addMethod(sourceData,"tok_visa").then(done).catch(done);
     }).catch(done);
   });
 
   it("Add payments methods using invalid informations", function(done) {
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
-      custCleanList.push(cust.stripeCusid);
+      custCleanList.push(cust.id);
       cust.addMethod(sourceData, "tok_invalid").then(function () {
         done("Error token invalid not detected");
       }).catch(function (err) {
@@ -81,7 +81,7 @@ describe("Class customer", function(){
 
   it("List all payment's method", function(done) {
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
-      custCleanList.push(cust.stripeCusid);
+      custCleanList.push(cust.id);
       var promises = [];
 
       promises.push(cust.addMethod(sourceData,"tok_visa").catch(done));
@@ -95,7 +95,7 @@ describe("Class customer", function(){
 
   it("Remove a payment's method", function(done) {
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
-      custCleanList.push(cust.stripeCusid);
+      custCleanList.push(cust.id);
       var promises = [];
       var promises2 = [];
       promises.push(cust.addMethod(sourceData,"tok_visa").catch(done));
@@ -112,7 +112,7 @@ describe("Class customer", function(){
 
   it("Change customer's source", function(done) {
     customer.Customer.create("test@email.com","David","Pate").then(function (cust) {
-      custCleanList.push(cust.stripeCusid);
+      custCleanList.push(cust.id);
       var actualSource = "";
       var promises = [];
 
@@ -120,14 +120,14 @@ describe("Class customer", function(){
       promises.push(cust.addMethod(sourceData,"tok_mastercard").catch(done));
 
       Promise.all(promises)
-        .then(() => stripe.customers.retrieve(cust.stripeCusid))
+        .then(() => stripe.customers.retrieve(cust.id))
         .then((custStripe1) => {actualSource = custStripe1.default_source;
                                 return cust.getMethodList()})
         .then((p1) => {for (let i in p1) {
                           if (actualSource != p1[i].id)
                               return cust.setStripeMethod(p1[i].id);
                       }})
-        .then(() => stripe.customers.retrieve(cust.stripeCusid))
+        .then(() => stripe.customers.retrieve(cust.id))
         .then((custStripe2) => {actualSource.should.not.be.equal(custStripe2.default_source);
                                 done();});
     }).catch(done);
