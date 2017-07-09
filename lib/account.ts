@@ -84,6 +84,15 @@ export  class  Account {
     else
       return stripe.transfers.list({ destination:this.id, limit:limit }).catch(parseError);
   }
+
+  /**
+  * ## account.getId()
+  * Return the id of the account
+  * @returns {string} Account id
+  */
+  getId() {
+    return this.id;
+  }
 }
 
 function parseError(err) {

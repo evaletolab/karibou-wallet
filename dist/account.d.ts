@@ -11,4 +11,5 @@ export declare class Account {
     static create(id: string): any;
     save(): string;
     getTransferList(limit?: number, transferOffset?: any): any;
+    getId(): string;
 }

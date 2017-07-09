@@ -200,6 +200,14 @@ export  class  Transaction {
   getId() {
     return this.id;
   }
+
+  /**
+  * ## transaction.getGroupId()
+  * @returns {string} Return the group id
+  */
+  getGroupId() {
+    return this.groupId;
+  }
 }
 
 function parseError(err) {

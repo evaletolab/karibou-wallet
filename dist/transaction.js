@@ -107,6 +107,9 @@ class Transaction {
     getId() {
         return this.id;
     }
+    getGroupId() {
+        return this.groupId;
+    }
 }
 exports.Transaction = Transaction;
 function parseError(err) {
