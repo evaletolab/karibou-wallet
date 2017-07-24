@@ -105,7 +105,7 @@ describe("Class transfer", function(){
   });
 
   it("Transfer partial refund", function(done) {
-    transferObject.refund(accObject,"test partial",350)
+    transferObject.refund(accObject,"test partial refund",350)
     .then(() => {
       transferObject.dest[0].amountRefunded.should.equal(350);
       done();
@@ -113,7 +113,7 @@ describe("Class transfer", function(){
   });
 
   it("Transfer full refund", function(done) {
-    transferObject.refund(accObject,"test partial")
+    transferObject.refund(accObject,"test full refund")
     .then(() => {
       transferObject.dest[0].amountRefunded.should.equal(1500);
       done();
@@ -121,7 +121,7 @@ describe("Class transfer", function(){
   });
 
   it("Transfer full refund of all transfers", function(done) {
-    transferObject.refundAll()
+    transferObject.refundAll("test refundAll")
     .then(() => {
       transferObject.dest[0].amountRefunded.should.equal(1500);
       transferObject.dest[1].amountRefunded.should.equal(700);
