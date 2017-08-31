@@ -101,7 +101,8 @@ describe("driver.mongoose.transfer.cancel", function(){
       name:'TITULAIRE DUMIN RUE DE LA BOULANGERIE 3 1204',
     };
 
-    Wallets.transfer_create(userWallet.wid,transfer,bank).then(function (transfer,wallet) {
+    Wallets.transfer_create(userWallet.wid,transfer,bank).then(function (transfer) {
+      var wallet=transfer._data.wallet;
       setTimeout(function() {
         _.extend(validTransfer,transfer);
         should.exist(transfer.id)
@@ -123,6 +124,7 @@ describe("driver.mongoose.transfer.cancel", function(){
       amount:100
     }
     Wallets.transfer_cancel(userWallet.wid,cancel).then(function (transfer,wallet,recipient) {
+      var wallet=transfer._data.wallet;
       setTimeout(function() {
         should.exist(transfer.id)
         should.exist(transfer.bank.name)
@@ -156,6 +158,7 @@ describe("driver.mongoose.transfer.cancel", function(){
       amount:100
     }
     Wallets.transfer_cancel(userWallet.wid,cancel).then(function (transfer,wallet,recipient) {
+      var wallet=transfer._data.wallet;
       setTimeout(function() {
         should.exist(transfer.id)
         should.exist(transfer.bank.name)
@@ -174,6 +177,8 @@ describe("driver.mongoose.transfer.cancel", function(){
       type:'debit'
     }; 
     Wallets.transfer_create(userWallet.wid,transfer,otherWallet.wid).then(function (transfer,wallet,recipient) {
+      var wallet=transfer._data.wallet;
+      var recipient=transfer._data.recipient;
       setTimeout(function() {
         _.extend(validTransfer,transfer);
         should.exist(transfer.wallet)
@@ -196,6 +201,8 @@ describe("driver.mongoose.transfer.cancel", function(){
       id:validTransfer.id
     }; 
     Wallets.transfer_cancel(userWallet.wid,transfer).then(function (transfer,wallet,recipient) {
+      var wallet=transfer._data.wallet;
+      var recipient=transfer._data.recipient;
       setTimeout(function() {
         _.extend(validTransfer,transfer);
         should.exist(transfer.wallet)

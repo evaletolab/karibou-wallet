@@ -8,13 +8,14 @@ var should = require('should');
 var dbtools = require('./fixtures/dbtools');
 var db = require('mongoose');
 
+
 describe("driver.mongoose.race.transfer", function(){
   var config = require('../lib/config');
   require('../lib/wallet.driver.mongoose.js');
   var Wallets=db.model('Wallets');
   var tools=require('../lib/tools');
   var _=require('underscore');
-  var Q=require('q');
+  var Q=require('bluebird');
 
   before(function(done){
     db.connect(config.option('mongo').name, function () {
@@ -66,11 +67,15 @@ describe("driver.mongoose.race.transfer", function(){
     races.push(Wallets.transfer_create(giftWallet.wid,transfer,bank));
     races.push(Wallets.transfer_create(giftWallet.wid,transfer,bank));
 
+    //
+    //
     Q.all(races).then(function(wallet) {
       should.not.exist(wallet)
     },function (error) {
-      error.message.should.containEql('The wallet is already running another task')
-      done();      
+      setTimeout(function() {
+        error.message.should.containEql('The wallet is already running another task')
+        done();      
+      },0)
     })
 
   });

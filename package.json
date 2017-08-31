@@ -1,7 +1,7 @@
 {
   "name": "karibou-wallet",
   "description": "Simple Wallet API client library for Node.js",
-  "version": "0.5.23",
+  "version": "0.6.0",
   "author": "Olivier Evalet <evaleto@gmail.com>",
   "maintainers": [
     {
@@ -21,12 +21,12 @@
   ],
   "dependencies": {
     "async": "^2.0.0",
+    "bluebird": "^3.5.0",
     "fnv-plus": "1.2.x",
     "iban": "0.0.x",
     "js-money": "0.x",
     "mersenne": ">= 0.0.3",
     "mongoose": "4.x",
-    "q": "^1.4.1",
     "underscore": "1.8.x",
     "validator": "4.7.1"
   },
@@ -42,7 +42,7 @@
   ],
   "scripts": {
     "test": "./node_modules/.bin/mocha test"
-  },  
+  },
   "keywords": [
     "payment processing",
     "wallet"

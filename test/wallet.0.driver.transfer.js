@@ -168,6 +168,7 @@ describe("driver.mongoose.transfer", function(){
       account:'123-12345-6'
     }
     Wallets.transfer_create(giftWallet.wid,transfer,bank).then(function (transfer,wallet) {
+      var wallet=transfer._data.wallet;
       setTimeout(function() {
         // console.log('-----------------gift',wallet.email,wallet.balance,transfer.id);
         wallet.balance.should.equal(400)
@@ -186,6 +187,7 @@ describe("driver.mongoose.transfer", function(){
       account:'123-12345-6'
     }
     Wallets.transfer_create(giftWallet.wid,transfer,bank).then(function (transfer,wallet) {
+      var wallet=transfer._data.wallet;
       setTimeout(function() {
         //console.log('-----------------gift',wallet.email,wallet.balance);
         wallet.balance.should.equal(200)
@@ -213,7 +215,9 @@ describe("driver.mongoose.transfer", function(){
         wallet.wid.should.equal(userWallet.wid);
         wallet.card.last4.should.equal(userWallet.card.number.substr(16-4));
         done();
-      });
+      })
+    }).catch(error=>{
+      console.log('------------------',error.stack)
     });
   });
 
