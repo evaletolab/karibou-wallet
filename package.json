@@ -26,7 +26,7 @@
     "iban": "0.0.x",
     "js-money": "0.x",
     "mersenne": ">= 0.0.3",
-    "mongoose": "4.x",
+    "mongoose": "4.7.x",
     "underscore": "1.8.x",
     "validator": "4.7.1"
   },
