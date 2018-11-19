@@ -16,9 +16,12 @@ describe("driver.mongoose.wallet", function(){
   var _=require('underscore');
 
   before(function(done){
-    db.connect(config.option('mongo').name, function () {
-      dbtools.load(["../fixtures/Wallets.js"],db,done);
-    });
+    db.connect(config.option('mongo').name,{useMongoClient: true})
+      .then(function(db){
+        dbtools.load(["../fixtures/Wallets.js"],db,done);
+      },function(e){
+        console.log('-----',e)
+      });
   });
 
   after(function (done) {
