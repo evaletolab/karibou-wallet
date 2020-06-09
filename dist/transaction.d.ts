@@ -22,4 +22,5 @@ export declare class Transaction {
     getTransactionAmount(): number;
     getAmountRefunded(): number;
     getId(): string;
+    getGroupId(): string;
 }
