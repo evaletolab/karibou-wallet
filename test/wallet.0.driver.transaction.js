@@ -96,7 +96,8 @@ describe.skip("driver.mongoose.transaction", function(){
       description:'hello',
       captured:true
     }
-    Wallets.transaction_charge(userWallet.wid,trans).then(function (transaction,wallet) {
+    Wallets.transaction_charge(userWallet.wid,trans).then(function (transaction) {
+      var wallet=transaction._data.wallet;
       setTimeout(function() {
         _.extend(capturedTrans,transaction);
         should.exist(transaction.description);
@@ -153,7 +154,8 @@ describe.skip("driver.mongoose.transaction", function(){
     var transaction={
       amount:50,id:capturedTrans.id
     }
-    Wallets.transaction_refund(userWallet.wid,transaction).then(function (trans,wallet) {
+    Wallets.transaction_refund(userWallet.wid,transaction).then(function (trans) {
+      var wallet=trans._data.wallet;
       setTimeout(function() {
         trans.logs[0].should.containEql('refund 0.5 CHF at')
         trans.id.should.equal(transaction.id);
@@ -176,7 +178,8 @@ describe.skip("driver.mongoose.transaction", function(){
       amount:400,
       description:'hello'
     }
-    Wallets.transaction_charge(userWallet.wid,trans).then(function (transaction,wallet) {
+    Wallets.transaction_charge(userWallet.wid,trans).then(function (transaction) {
+      var wallet=transaction._data.wallet;
       setTimeout(function() {
         _.extend(capturedTrans,transaction);
         transaction.status.should.equal('authorize')
@@ -236,7 +239,8 @@ describe.skip("driver.mongoose.transaction", function(){
     var transaction={
       amount:50,id:capturedTrans.id
     }
-    Wallets.transaction_capture(userWallet.wid,transaction).then(function (trans,wallet) {
+    Wallets.transaction_capture(userWallet.wid,transaction).then(function (trans) {
+      var wallet=trans._data.wallet;
       setTimeout(function() {
         trans.status.should.equal('capture')
         trans.amount.should.equal(trans.amount)

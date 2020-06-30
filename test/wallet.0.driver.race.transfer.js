@@ -14,7 +14,7 @@ describe.skip("driver.mongoose.race.transfer", function(){
   var Wallets=db.model('Wallets');
   var tools=require('../lib/tools');
   var _=require('underscore');
-  var Q=require('q');
+  var Q=require('bluebird');
 
   before(function(done){
     db.connect(config.option('mongo').name, function () {
@@ -66,6 +66,8 @@ describe.skip("driver.mongoose.race.transfer", function(){
     races.push(Wallets.transfer_create(giftWallet.wid,transfer,bank));
     races.push(Wallets.transfer_create(giftWallet.wid,transfer,bank));
 
+    //
+    //
     Q.all(races).then(function(wallet) {
       should.not.exist(wallet)
     },function (error) {

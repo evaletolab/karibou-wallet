@@ -14,7 +14,7 @@ describe.skip("driver.mongoose.race.transaction", function(){
   var Wallets=db.model('Wallets');
   var tools=require('../lib/tools');
   var _=require('underscore');
-  var Q=require('q');
+  var Q=require('bluebird');
 
   before(function(done){
     db.connect(config.option('mongo').name, function () {
@@ -90,6 +90,7 @@ describe.skip("driver.mongoose.race.transaction", function(){
     }
 
     Wallets.transaction_charge(userWallet.wid,trans).then(function (trx,wallet) {
+      var wallet=trx._data.wallet;      
       setTimeout(function() {
         should.exist(trx);
         wallet.balance.should.equal(500-300-30)

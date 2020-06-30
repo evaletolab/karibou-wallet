@@ -7,7 +7,7 @@ var assert = require('assert');
 var should = require('should');
 var dbtools = require('./fixtures/dbtools');
 var db = require('mongoose');
-var Q=require('q');
+var Q=require('bluebird');
 
 describe.skip("driver.mongoose.race.wallet", function(){
   var config = require('../lib/config');

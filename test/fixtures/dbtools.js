@@ -3,6 +3,7 @@ var async = require("async");
 var db    = require("mongoose");
 var fx    = require('pow-mongoose-fixtures');
 
+db.Promise = Promise;  
 
 exports.clean=function(callback){
   var promise

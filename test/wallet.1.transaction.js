@@ -94,8 +94,9 @@ describe.skip("wallet.transaction", function(){
       amount:100,
       description:'hello',
       captured:true
-    }
+    };
     karibou.charge.create(userWallet.wid,trans).then(function (transaction,w) {
+      var w=transaction._data.wallet;
       setTimeout(function() {
         _.extend(capturedTrans,transaction);
         transaction.id.substr(0,3).should.equal('ch_');
