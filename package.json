@@ -1,18 +1,27 @@
 {
   "name": "karibou-wallet",
   "description": "Simple Wallet API client library for Node.js",
-  "version": "0.6.0",
+  "version": "2.0.0",
   "author": "Olivier Evalet <evaleto@gmail.com>",
   "maintainers": [
     {
       "name": "Olivier Evalet",
       "email": "evaleto@gmail.com"
+    },
+    {
+      "name": "David Pate",
+      "email": "pate.david1@gmail.com"
     }
   ],
-  "homepage": "http://github.com/evaletolab/karibou-wallet",
+  "files": [
+    "dist",
+    "index.js",
+    "index.d.ts"
+  ],
+  "homepage": "http://github.com/karibou-ch/karibou-wallet",
   "repository": {
     "type": "git",
-    "url": "https://github.com/evaletolab/karibou-wallet.git"
+    "url": "https://github.com/karibou-ch/karibou-wallet.git"
   },
   "licenses": [
     {
@@ -28,9 +37,14 @@
     "mersenne": ">= 0.0.3",
     "mongoose": "4.7.x",
     "underscore": "1.8.x",
-    "validator": "4.7.1"
+    "validator": "4.7.1",
+    "ts-node": "~2.0.0",
+    "tslint": "~4.5.0",
+    "typescript": "~2.2.0",
+    "stripe": "4.23.0"
   },
   "devDependencies": {
+    "@types/node": "^7.0.29",
     "async": "^1.5.0",
     "mocha": ">= 1.x.x",
     "pow-mongoose-fixtures": "^0.3.0",
@@ -38,13 +52,14 @@
     "uglify-js": ">= 2.x.x"
   },
   "engine": [
-    "node >=1.x.0"
+    "node >=6.x.0"
   ],
   "scripts": {
-    "test": "./node_modules/.bin/mocha test"
+    "test": "./node_modules/.bin/mocha test",
+    "build": "rm -rf dist;./node_modules/.bin/tsc -p lib/"
   },
   "keywords": [
-    "payment processing",
+    "marketplace payment processing",
     "wallet"
   ]
 }

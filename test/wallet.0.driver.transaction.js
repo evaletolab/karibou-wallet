@@ -8,7 +8,7 @@ var should = require('should');
 var dbtools = require('./fixtures/dbtools');
 var db = require('mongoose');
 
-describe("driver.mongoose.transaction", function(){
+describe.skip("driver.mongoose.transaction", function(){
   var config = require('../lib/config');
   require('../lib/wallet.driver.mongoose.js');
   var Wallets=db.model('Wallets');
@@ -46,7 +46,7 @@ describe("driver.mongoose.transaction", function(){
     Wallets.retrieve(userWallet.wid).then(function (wallet) {
       setTimeout(function() {
         _.extend(userWallet,wallet)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -58,7 +58,7 @@ describe("driver.mongoose.transaction", function(){
     Wallets.create(giftWallet).then(function (wallet) {
       setTimeout(function() {
         _.extend(giftWallet,wallet)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -258,6 +258,6 @@ describe("driver.mongoose.transaction", function(){
   });
 
 
-  
+
 
 });

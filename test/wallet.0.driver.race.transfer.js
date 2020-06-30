@@ -8,8 +8,7 @@ var should = require('should');
 var dbtools = require('./fixtures/dbtools');
 var db = require('mongoose');
 
-
-describe("driver.mongoose.race.transfer", function(){
+describe.skip("driver.mongoose.race.transfer", function(){
   var config = require('../lib/config');
   require('../lib/wallet.driver.mongoose.js');
   var Wallets=db.model('Wallets');
@@ -72,10 +71,8 @@ describe("driver.mongoose.race.transfer", function(){
     Q.all(races).then(function(wallet) {
       should.not.exist(wallet)
     },function (error) {
-      setTimeout(function() {
-        error.message.should.containEql('The wallet is already running another task')
-        done();      
-      },0)
+      error.message.should.containEql('The wallet is already running another task')
+      done();
     })
 
   });
@@ -105,7 +102,7 @@ describe("driver.mongoose.race.transfer", function(){
       // this is important, race condition is trigged before the success transfer will' done
       setTimeout(function() {
         error.message.should.containEql('The wallet is already running another task')
-        done();              
+        done();
       }, 200);
     })
 
@@ -124,6 +121,6 @@ describe("driver.mongoose.race.transfer", function(){
       });
   });
 
-  
+
 
 });

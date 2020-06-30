@@ -8,7 +8,7 @@ var should = require('should');
 var dbtools = require('./fixtures/dbtools');
 var db = require('mongoose');
 
-describe("driver.mongoose.race.transaction", function(){
+describe.skip("driver.mongoose.race.transaction", function(){
   var config = require('../lib/config');
   require('../lib/wallet.driver.mongoose.js');
   var Wallets=db.model('Wallets');
@@ -94,7 +94,7 @@ describe("driver.mongoose.race.transaction", function(){
       setTimeout(function() {
         should.exist(trx);
         wallet.balance.should.equal(500-300-30)
-        done();        
+        done();
       }, 0);
     });
 
@@ -122,11 +122,11 @@ describe("driver.mongoose.race.transaction", function(){
           wallet.balance.should.equal(480);
           userWallet.balance.should.equal(500)
           done();
-        });        
-      }, 10);      
+        });
+      }, 10);
     });
 
   });
-  
+
 
 });

@@ -8,7 +8,7 @@ var should = require('should');
 var dbtools = require('./fixtures/dbtools');
 var db = require('mongoose');
 
-describe("wallet.transaction", function(){
+describe.skip("wallet.transaction", function(){
   var config = require('../lib/config');
   var tools=require('../lib/tools');
   var karibou= require('../index')();
@@ -45,7 +45,7 @@ describe("wallet.transaction", function(){
     karibou.wallet.retrieve(userWallet.wid).then(function (wallet) {
       setTimeout(function() {
         _.extend(userWallet,wallet)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -57,7 +57,7 @@ describe("wallet.transaction", function(){
     karibou.wallet.create(giftWallet).then(function (wallet) {
       setTimeout(function() {
         _.extend(giftWallet,wallet)
-        done();        
+        done();
       }, 0);
     });
   });
@@ -247,6 +247,6 @@ describe("wallet.transaction", function(){
   });
 
 
-  
+
 
 });

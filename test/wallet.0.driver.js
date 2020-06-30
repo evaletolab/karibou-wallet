@@ -8,7 +8,7 @@ var should = require('should');
 var dbtools = require('./fixtures/dbtools');
 var db = require('mongoose');
 
-describe("driver.mongoose.wallet", function(){
+describe.skip("driver.mongoose.wallet", function(){
   var config = require('../lib/config');
   require('../lib/wallet.driver.mongoose.js');
   var Wallets=db.model('Wallets');
@@ -66,7 +66,7 @@ describe("driver.mongoose.wallet", function(){
         userWallet.wid=wallet.wid;
         userWallet.email=wallet.email;
         userWallet.card=wallet.card;
-        done();        
+        done();
       }, 0);
     });
   });
@@ -79,7 +79,7 @@ describe("driver.mongoose.wallet", function(){
       }, 0);
     }).then(undefined,function (err) {
         err.message.should.containEql('Impossible de créer un comtpe pour cet utilisateur')
-        done();        
+        done();
     });
   });
 
@@ -91,7 +91,7 @@ describe("driver.mongoose.wallet", function(){
     Wallets.create(giftWallet).then(function (wallet) {
       setTimeout(function() {
         _.extend(giftWallet,wallet)
-        done();        
+        done();
       }, 0);
     });
   });

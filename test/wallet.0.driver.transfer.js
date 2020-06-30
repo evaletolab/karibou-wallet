@@ -8,7 +8,7 @@ var should = require('should');
 var dbtools = require('./fixtures/dbtools');
 var db = require('mongoose');
 
-describe("driver.mongoose.transfer", function(){
+describe.skip("driver.mongoose.transfer", function(){
   var config = require('../lib/config');
   require('../lib/wallet.driver.mongoose.js');
   var Wallets=db.model('Wallets');
@@ -51,7 +51,7 @@ describe("driver.mongoose.transfer", function(){
       setTimeout(function() {
         _.extend(userWallet,wallet)
         //console.log('-----------------user',wallet.email,wallet.balance);
-        done();        
+        done();
       }, 0);
     });
   });
@@ -64,7 +64,7 @@ describe("driver.mongoose.transfer", function(){
       setTimeout(function() {
         _.extend(giftWallet,wallet)
         //console.log('-----------------gift',wallet.email,wallet.balance);
-        done();        
+        done();
       }, 0);
     });
   });
@@ -125,7 +125,7 @@ describe("driver.mongoose.transfer", function(){
         done();
       });
     })
-  });  
+  });
 
 
   it("Credit our GIFTCODE with wrong source recipient ", function(done){
@@ -140,7 +140,7 @@ describe("driver.mongoose.transfer", function(){
         done();
       });
     })
-  });  
+  });
 
   it("Credit our GIFTCODE with negative amount ", function(done){
     var transfer={
@@ -157,7 +157,7 @@ describe("driver.mongoose.transfer", function(){
         done();
       });
     })
-  });  
+  });
 
   it("Credit our GIFTCODE with 4.00 CHF", function(done){
     var transfer={
@@ -235,10 +235,10 @@ describe("driver.mongoose.transfer", function(){
         done();
       });
     });
-  });  
+  });
 
 
-  
+
   it.skip("Transfer (DEBIT) current wallet to bank account", function(done){
   });
 
@@ -250,6 +250,6 @@ describe("driver.mongoose.transfer", function(){
   });
 
 
-  
+
 
 });
