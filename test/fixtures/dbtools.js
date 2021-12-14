@@ -1,25 +1,22 @@
 
-var async = require("async");  
 var db    = require("mongoose");
 var fx    = require('pow-mongoose-fixtures');
 
 db.Promise = Promise;  
 
-exports.clean=function(callback){
-  var promise
+exports.clean=async function(callback){
   if (process.env.NODE_ENV!=='test'){
     console.log('cannot run test without test environement: NODE_ENV=test mocha')
     process.exit(1);
   }
 
-  var iterator = function(name, nextcb){
-    if (name.match(/^system\./))return nextcb();
-    db.connection.collections[name].drop(function(e){
-      // error when wallet doesnt exist!
-      nextcb();
-    });
-  };
-  async.forEach(Object.keys(db.connection.collections), iterator,callback);
+  const collections = Object.keys(db.connection.collections);
+  for (let collection in collections) {
+    if (!collection.match(/^system\./)){
+      await db.connection.collections[collection].drop();      
+    }
+  }
+  callback();
 };
 
 exports.fixtures=function(names){
@@ -37,16 +34,16 @@ exports.fixtures=function(names){
   });
   return data;
 }
-exports.load=function(fixtures, cb, callback){
+exports.load=async function(fixtures, cb, callback){
   if (process.env.NODE_ENV!=='test'){
     console.log('cannot run test without test environement: NODE_ENV=test mocha')
     process.exit(1);
   }
 
-  var iterator = function(fixture, nextcb){
-        fx.load(fixture,db, nextcb);
-  };
-  async.forEach(fixtures, iterator,callback);
+  for (let fixture in fixtures) {
+    await fx.load(fixture,db);
+  }
+  callback();
 }
 
 
