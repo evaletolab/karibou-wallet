@@ -1,122 +1,211 @@
 /**
- * Unit tests for transaction module
- * Author: David Pate
- * Date: july 2017
+ * Karibou payment wrapper
+ * Customer
  */
 
-var stripe = require("stripe")("sk_test_7v4G5a18JptIOX2cbYAYMsun");
-var transaction = require("../dist/transaction");
-var customer = require("../dist/customer");
-var payments = require("../dist/payments.enum").Payment;
-var should = require('should');
-var test = exports;
+ const config =require("../dist/config").default;
+ const customer = require("../dist/customer");
+ const payments = require("../dist/payments").Payment;
+ const transaction = require("../dist/transaction");
+ const xor = require("../dist/payments").xor;
+ const $stripe = require("../dist/payments").$stripe;
+ const should = require('should');
 
 
 describe("Class transaction", function(){
   this.timeout(8000);
 
-  var sourceData = {
-    type: payments.card,
-    sourceId: null,
-    owner: 'Pate David'
-  }
+  let defaultCustomer;
+  let defaultPaymentAlias;
+  let defaultTX;
 
-  var custObject = undefined;
+  const pm_valid = {
+    type: 'card',
+    card: {
+      number: '4242424242424242',
+      exp_month: 8,
+      exp_year: 2025,
+      cvc: '314',
+    },
+  };
+ 
 
   before(function(done){
     done();
   });
 
-  after(function (done) {
-    stripe.customers.del(custObject.getId()).then(() => done()).catch(done);
+  after(async function () {
+    await $stripe.customers.del(defaultCustomer.id);
   });
 
   // START TESTING
-  it("Transaction creation", function(done) {
-    customer.Customer.create("test@email.com","David","Pate")
-    .then((cust) => {
-      custObject = cust;
-      return cust.addMethod(sourceData,"tok_visa");
-    })
-    .then(() => {
-      var transac1 = new transaction.Transaction(custObject,1000,"test_transac1","Test du module transaction");
-      transac1.should.property("cust");
-      transac1.should.property("amount");
-      transac1.should.property("groupId");
-      done();
-    }).catch(done);
+  it("Transaction create authorization", async function() {
+    defaultCustomer = await customer.Customer.create("test@email.com","Foo","Bar","022345",1234);
+    const pm = await $stripe.paymentMethods.create(pm_valid);
+
+    const card = await defaultCustomer.addMethod(pm.id);
+    defaultPaymentAlias = card.alias;
+
+    const paymentOpts = {
+      oid: '01234',
+      txgroup: 'AAA',
+      email: 'foo@bar',
+      shipping: {
+          streetAdress: 'rue du rhone 69',
+          postalCode: '1208',
+          name: 'foo bar family'
+      }
+    };
+
+    const tx = await transaction.Transaction.authorize(defaultCustomer,card,2,paymentOpts)
+    tx.should.property("amount");
+    tx.should.property("group");
+    tx.should.property("customer");
+    tx.authorized.should.equal(true);
+    tx.amount.should.equal(2);
+    tx.group.should.equal('AAA');
+    tx.oid.should.equal('01234');
+    tx.requiresAction.should.equal(false);
+    tx.captured.should.equal(false);
+    tx.canceled.should.equal(false);
+    tx.refunded.should.equal(0);
+    should.exist(tx._payment.shipping);
+
+    should.exist(tx.report.log);
+    should.exist(tx.report.transaction);
+
+    //console.log('---- DBG report',tx._payment);
+    //console.log('---- DBG report',tx.report);
+
+    defaultTX = tx.id;
   });
 
-  it("Transaction authorization", function(done) {
-    var transac2 = new transaction.Transaction(custObject,1000,"test_transac2","Test du module transaction");
-    transac2.auth().then(() => {
-      transac2.should.property("id").not.equal(undefined);
-      transac2.should.property("authorized").equal(true);
-      done();
-    }).catch(done);
+  it("Transaction load authorization", async function() {
+    const tx = await transaction.Transaction.get(defaultTX);
+    tx.authorized.should.equal(true);
+    tx.amount.should.equal(2);
+    tx.oid.should.equal('01234');
+    tx.requiresAction.should.equal(false);
+    tx.captured.should.equal(false);
+    tx.canceled.should.equal(false);
+    tx.refunded.should.equal(0);
+    should.exist(tx.report.log);
+    should.exist(tx.report.transaction);
+    // console.log('---- DBG report amount_capturable',tx._payment.amount_capturable);
+    // console.log('---- DBG report amount_received',tx._payment.amount_received);
+
   });
 
-  it("Transaction capture", function(done) {
-    var transac3 = new transaction.Transaction(custObject,1000,"test_transac3","Test du module transaction");
-    transac3.auth()
-    .then(() => transac3.capture())
-    .then(() => {
-      transac3.should.property("captured").equal(true);
-      return stripe.charges.retrieve(transac3.id);
-    })
-    .then((charge) => {
-      charge.captured.should.equal(true);
-      done();
-    }).catch(done);
+  it("Transaction capture amount >2 fr throws an error", async function() {
+    try{
+      const tx = await transaction.Transaction.get(defaultTX);
+      await tx.capture(2.01);
+      should.not.exist(tx);
+    }catch(err) {
+      should.exist(err);
+    }
   });
 
-  it("Transaction cancel", function(done) {
-    var transac4 = new transaction.Transaction(custObject,1000,"test_transac4","Test du module transaction");
-    transac4.auth()
-    .then(() => transac4.cancel())
-    .then(() => {
-      transac4.should.property("captured").equal(false);
-      transac4.should.property("authorized").equal(true);
-      transac4.should.property("canceled").equal(true);
-      done();
-    }).catch(done);
+  it("Transaction capture amount >1 fr should success", async function() {
+    try{
+      const tx = await transaction.Transaction.get(defaultTX);
+      await tx.capture(1.0);
+      tx.amount.should.equal(1);
+      tx.authorized.should.equal(false);
+      tx.captured.should.equal(true);
+      tx.canceled.should.equal(false);
+  
+      //console.log('---- DBG report amount',tx._payment.amount);
+      //console.log('---- DBG report amount_capturable',tx._payment.amount_capturable);
+      //console.log('---- DBG report amount_received',tx._payment.amount_received);
+
+    }catch(err) {
+      should.not.exist(err);
+    }
   });
 
-  it("Transaction total refund", function(done) {
-    var transac5 = new transaction.Transaction(custObject,1000,"test_transac5","Test du module transaction");
-    transac5.auth()
-    .then(() => transac5.capture())
-    .then(() => transac5.refund())
-    .then(() => {
-      transac5.should.property("captured").equal(true);
-      transac5.should.property("amountRefunded").equal(1000);
-      done();
-    }).catch(done);
+  it("Transaction cancel a captured tx throw an error", async function() {
+    try{
+      const tx = await transaction.Transaction.get(defaultTX);
+      await tx.cancel();
+      should.not.exist(tx);
+    }catch(err) {
+      should.exist(err);
+    }
   });
 
-  it("Transaction partial refund", function(done) {
-    var transac6 = new transaction.Transaction(custObject,1000,"test_transac6","Test du module transaction");
-    transac6.auth()
-    .then(() => transac6.capture())
-    .then(() => transac6.refund(250))
-    .then(() => {
-      transac6.should.property("captured").equal(true);
-      transac6.should.property("amountRefunded").equal(250);
-      done();
-    }).catch(done);
+  it("Transaction total refund", async function() {
+    try{
+      const tx = await transaction.Transaction.get(defaultTX);
+      tx.refunded.should.equal(0);
+      await tx.refund();
+      tx.refunded.should.equal(1);
+    }catch(err) {
+      should.exist(err);
+    }
+
   });
 
-  it("Transaction loaded from json", function(done) {
-    var transac7 = new transaction.Transaction(custObject,1000,"test_transac7","Test du module transaction");
-    transac7.auth()
-    .then(() => transac7.capture())
-    .then(() => transac7.refund(250))
-    .then(() => transaction.Transaction.load(JSON.parse(transac7.save())))
-    .then((transac8) => {
-      transac8.save().should.equal(transac7.save());
-      done();
-    })
-    .catch(done);
+  it("Transaction capture without minimal amount throw an error", async function() {
+
+    try{
+      const paymentOpts = {
+        oid: '01234',
+        txgroup: 'AAA',
+        email: 'foo@bar',
+        shipping: {
+            streetAdress: 'rue du rhone 69',
+            postalCode: '1208',
+            name: 'foo bar family'
+        }
+      };
+  
+      // load card from default customer
+      const card = defaultCustomer.findMethodByAlias(defaultPaymentAlias);
+  
+      // create TX
+      const tx = await transaction.Transaction.authorize(defaultCustomer,card,4.55,paymentOpts)
+  
+      // capture TX
+      await tx.capture(4.55);
+      should.not.exist(tx);
+  
+    }catch(err) {
+      should.exist(err);
+    }
+
   });
+
+  it("Transaction partial refund", async function() {
+    const paymentOpts = {
+      oid: '01234',
+      txgroup: 'AAA',
+      email: 'foo@bar',
+      shipping: {
+          streetAdress: 'rue du rhone 69',
+          postalCode: '1208',
+          name: 'foo bar family'
+      }
+    };
+
+    // load card from default customer
+    const card = defaultCustomer.findMethodByAlias(defaultPaymentAlias);
+
+    // create TX
+    const tx = await transaction.Transaction.authorize(defaultCustomer,card,4.55,paymentOpts)
+
+    // capture TX
+    await tx.capture(4.55);
+
+    // partial refund TX
+    await tx.refund(2.0);
+    tx.refunded.should.equal(2);
+
+    await tx.refund(1.0);
+    tx.refunded.should.equal(3);
+
+
+  });
+
 
 });

@@ -4,227 +4,376 @@
 * Licensed under GPL license (see LICENSE)
 */
 
-import { Config } from './config';
-import * as stripeLib from 'stripe';
-import { Payment } from './payments.enum';
-const stripe = stripeLib(Config.option('privatekey'));
+import { strict as assert } from 'assert';
+import Stripe from 'stripe';
+import { Payment, $stripe, xor, unxor, Address } from './payments';
+import Config from './config';
 
-export  class  Customer {
-  private id:string;
-  private sources:Source[];
-  private map:{};
-  private email:string;
-  private lastname:string;
-  private firstname:string;
+
+export interface Source {
+  type:Payment;
+  id:string;
+}
+
+export interface Card extends Source {
+  alias:string;
+  country:string;
+  last4:string;
+  issuer:string;
+  funding:string;
+  fingerprint:string;
+  expiry:string;
+  brand:string;
+}
+
+
+
+export class Customer {
+
+  private _available: boolean;
+  private _sources:Stripe.Card[]|any;
+  private _id:string;
+  private _metadata:any;
+
+  //
+  // phone or email share the same role of identity
+  private _email:string;
+  private _phone:string;
+  private _fname:string;
+  private _lname:string;
+
+  //
+  // mapped with backend
+  private _uid:string;
+
+  //
+  // collected from metadata
+  private _addresses:Address[];
 
   /**
-   * ## customer(json)
-   * @param {string} json Json serialized customer object
+   * ## customer(id,email,displayName,uid)
+   * @param  customer created by Stripe
    * @constructor
    */
-  constructor(json:string) {
-    let tmp = JSON.parse(json);
-    if ("email" in tmp) this.email = tmp.email;
-    else throw new Error("Missing parameter: email");
+  private constructor(id:string,email:string, phone: string, metadata:any) {
+    assert(id);
+    assert(email);
+    assert(phone);
+    assert(metadata.uid);
+    assert(metadata.fname);
+    assert(metadata.lname);
+    
+    this._email = email;
+    this._phone = phone;
+    this._fname = metadata.fname;
+    this._lname = metadata.lname;
+    this._uid = metadata.uid;
+    this._id = id;
+    this._metadata = metadata;
 
-    if ("lastname" in tmp) this.lastname = tmp.lastname;
-    else throw new Error("Missing parameter: lastname");
-
-    if ("firstname" in tmp) this.firstname = tmp.firstname;
-    else throw new Error("Missing parameter: firstname");
-
-    this.id = null;
-    this.sources = [];
-    if ("id" in tmp) this.id = tmp.id;
-    if ("sources" in tmp) this.sources = tmp.sources;
-
-    this.map={};
-    this.map[Payment.card]='card';
-    this.map[Payment.sepa]='sepa_debit';
-    this.map[Payment.bitcoin]='bitcoin';
+    //
+    // when loading existant customer
+    this._sources = [];
+    this._addresses = parseAddress(metadata);
   }
+
+  //
+  // Stripe id must be stable over time, this why we dont use xor(_id)
+  get id() {
+    return (this._id);
+  }
+
+  
+  get email() {
+    return this._email;
+  }
+
+  
+  get phone() {
+    return this._phone;
+  }
+
+  get name() {
+    return {
+      familyName:this._fname,
+      givenName:this._lname
+    };
+  }
+
+  get uid() {
+    return this._uid;
+  }
+
+  get addresses() {
+    return this._addresses.slice();
+  }
+
+  get methods() {
+    return this._sources.slice();
+  }
+
 
   /**
   * ## customer.create()
   * Async constructor of customer
-  * @param {string} email
-  * @param {string} lastname
-  * @param {string} firstname
-  * @returns {Boolean} Check result
+  * @returns a new Customer 
   */
-  static create(email:string, lastname:string, firstname:string) {
-    return stripe.customers.create({
-      description: lastname+' '+firstname,
-      email: email
-    }).then((customerStripe) => {
-      var custJson = JSON.stringify({
-        email:email,
-        lastname:lastname,
-        firstname:firstname,
-        id:customerStripe.id
-      });
-      return new Customer(custJson);
-    }).catch(parseError);
+  static async create(email:string, fname:string, lname:string, phone: string, uid:string) {
+    try{
+      const customer = await $stripe.customers.create({
+        description: fname + ' ' + lname + ' id:'+uid,
+        email: email,
+        phone,
+        metadata: {uid,fname, lname}
+      });  
+
+      return new Customer(customer.id,email,phone,customer.metadata); 
+    }catch(err) {
+      throw parseError(err);
+    } 
+
+
+    // try{
+
+    // }catch(err) {
+    //   throw parseError(err);
+    // } 
   }
+    
+
 
   /**
-  * ## customer.save()
-  * Serialize the object into JSON
-  * @returns {string} Customer object in JSON
+  * ## customer.get()
+  * @returns a Customer instance with all private data in memory
   */
-  save() {
-    var json:string;
+  static async get(id) {
+    try{
+      const stripe = await $stripe.customers.retrieve(id) as any;
+      const customer = new Customer(
+        stripe.id,
+        stripe.email,
+        stripe.phone,
+        stripe.metadata
+      ); 
+      await customer.listMethods();
+      return customer;
+    }catch(err) {
+      throw parseError(err);
+    } 
+  }
 
-    return JSON.stringify(this);
+
+
+  async addressAdd(address: Address) {
+    assert(this._metadata.uid);
+    assert(this._metadata.fname);
+    assert(this._metadata.lname);
+
+    try{
+      const keys = metadataElements(this._metadata,'addr');
+      address.id = 'addr-' + keys.length + 1;
+      this._metadata[address.id] = JSON.stringify(address,null,0);
+      const customer = await $stripe.customers.update(
+        this._id,
+        {metadata: this._metadata}
+      );
+      
+      this._metadata = customer.metadata;
+      this._addresses = parseAddress(customer.metadata);  
+    }catch(err) {
+      throw parseError(err);
+    }     
+  }
+
+  async addressRemove(address: Address) {
+    assert(this._metadata.uid);
+    assert(this._metadata.fname);
+    assert(this._metadata.lname);
+    assert(this._metadata[address.id]);
+
+    try{
+      this._metadata[address.id] = null;
+      const customer = await $stripe.customers.update(
+        this._id,
+        {metadata: this._metadata}
+      );
+      
+      this._metadata = customer.metadata;
+      this._addresses = parseAddress(customer.metadata);  
+    }catch(err) {
+      throw parseError(err);
+    }     
+  }
+
+  async addressUpdate(address: Address) {
+    assert(this._metadata.uid);
+    assert(this._metadata.fname);
+    assert(this._metadata.lname);
+    assert(this._metadata[address.id]);
+
+    try{
+      this._metadata[address.id] = JSON.stringify(address,null,0);
+      const customer = await $stripe.customers.update(
+        this._id,
+        {metadata: this._metadata}
+      );
+      
+      this._metadata = customer.metadata;
+      this._addresses = parseAddress(customer.metadata);  
+    }catch(err) {
+      throw parseError(err);
+    }     
+  }  
+
+  /**
+  * ## customer.addMethodIntent()
+  * Intent to add a new method of payment (off_session) to the customer
+  * @returns the payment Intent object
+  */
+  async addMethodIntent() {
+    return await $stripe.setupIntents.create({
+      usage:'off_session',
+    });
   }
 
   /**
   * ## customer.addMethod()
-  * Add method of payment for the customer
-  * @param {Source} sourceData Source object containing all the informatio
-  * needed for payment creation
-  * @param {string} token Some source require token to be created
-  * @returns {any} Promise for the source creation
+  * attach method of payment to the customer
+  * @returns the payment method object
   */
-  addMethod(sourceData:Source, token?:string) {
-    if (!(sourceData.type in this.map))
-      throw new Error("Unknown payment type");
+  async addMethod(token:string) {
+    try{
+      const method:any = await $stripe.paymentMethods.attach(token,{customer:this._id});
+      const card = parseMethod(method);
 
-    var newSourceData = {...sourceData}; // copy sourceData
-    if (newSourceData.type == Payment.card) {
-      return stripe.customers.createSource(this.id,{ source: token }).then((card) => {
-        var newCard:Card = {
-          type:Payment.card,
-          sourceId:card.id,
-          owner:newSourceData.owner,
-          brand:card.brand,
-          exp_year:card.exp_year,
-          exp_month:card.exp_month,
-          last4:card.last4
-        }
-        this.sources.push(newCard);
-      }).catch(parseError);
-    } else {
-      throw new Error("Unknown payment type");
-    }
+      //
+      // replace payment method if old one already exist (update like)
+      const exist = this._sources.find(method => card.alias == method.alias )
+      if(exist) {
+        //
+        // FIXME cannot remove payment used by an active subscription
+        await $stripe.paymentMethods.detach(unxor(exist.id));        
+      }
+      this._sources.push(card);
+      return card;
+    }catch(err) {
+      throw parseError(err);
+    } 
   }
 
-  /**
-  * ## customer.updateMethod()
-  * Update a payment's method of the customer
-  * @param {string} sourceId Stripe id of the source
-  * @param {Source} sourceData New data for the source
-  */
-  updateMethod(sourceId:string, sourceData:Source) {
-    var index = this.sources.findIndex(elem => elem.sourceId===sourceId)
-    this.sources[index] = sourceData;
-  }
 
   /**
   * ## customer.removeMethod()
   * Remove a payment's method of the customer
-  * @param {string} sourceId Stripe id of the source
+  * @param {string} paymentId Stripe id of the source
   * @returns {any} Promise on deletion of the source
   */
-  removeMethod(sourceId:string) {
-    var index:number=-1;
-    for (let i in this.sources) {
-      if (this.sources[i].sourceId == sourceId) {
-        index = Number(i);
-        break;
+  async removeMethod(method:Card) {
+    try{
+      const index:number= this._sources.findIndex(src => src.id == method.id);
+
+      if (index == -1) {
+        throw new Error("Source ID not found");
       }
+  
+      const card_id = unxor(method.id);
+
+      //
+      // check the stripe used version
+      const isNewImp = (card_id[0] === 'p' && card_id[1] === 'm' && card_id[2] === '_');
+  
+      //
+      // FIXME cannot remove payment used by an active subscription
+
+      //
+      // dettach
+      let confirmation;
+      if(isNewImp) {
+        confirmation = await $stripe.paymentMethods.detach(card_id);
+        this._sources.splice(index, 1);
+  
+      }else{
+        confirmation = await $stripe.customers.deleteSource(this._id,card_id);
+        this._sources.splice(index, 1);
+      }
+      console.log(" --- DBG removeMethod ",confirmation);
+  
+    }catch(err) {
+      throw (parseError(err));
     }
 
-    if (index !== -1) {
-      return stripe.customers.deleteCard(this.id,this.sources[index].sourceId).then(() => {
-        this.sources.splice(index, 1);
-      }).catch(parseError);
-    } else {
-      throw new Error("Source ID not found");
-    }
   }
 
   /**
-  * ## customer.getMethodList()
+  * ## customer.listMethods()
   * List of all the payment's method of the customer
-  * @returns {any[]} Promise which return the list of payment available
+  * @returns {any[]} return the list of available methods
   */
-  getMethodList() {
-    var paymentList:any[] = [];
-    var promiseList:any[] = [];
-    for (let i in this.sources) {
-      switch(this.sources[i].type) {
-        case Payment.card:
-          promiseList.push(stripe.customers.retrieveCard(this.id,this.sources[i].sourceId).then((source) => {
-            paymentList.push(source);
-          }).catch(parseError));
-          break;
-        default:
-          throw new Error("Unknown payment type");
-      }
-    }
-    return Promise.all(promiseList).then(function () {return paymentList});
-  }
-
-  /**
-  * ## customer.setStripeMethod()
-  * Set the payment's method which is going to be used for the next charge
-  * @param {string} sourceId Stripe id of the source
-  * @returns {any} Promise
-  */
-  setStripeMethod(sourceId:string) {
-    var index:number=-1;
-    for (let i in this.sources) {
-      if (this.sources[i].sourceId == sourceId) {
-        index = Number(i);
-        break;
-      }
-    }
-
-    if (index > -1) {
-      return stripe.customers.update(this.id,{default_source: sourceId}).catch(parseError);
-    } else {
-      throw new Error("Source not present in the customer")
+  async listMethods() {
+    try{
+      this._sources = await $stripe.paymentMethods.list({
+        customer:this._id,
+        type:'card'
+      });  
+      this._sources = this._sources.data.map(parseMethod);
+      return this._sources.slice();
+    }catch(err){
+      throw parseError(err);
     }
   }
 
-  /**
-  * ## customer.getChargeList()
-  * Return the charge's list of the customer, if chargeOffset is set, the list
-  * begin after it.
-  * @param {number} limit Number of charges to display (1-100) default = 10
-  * @param {any} chargeOffset Last object of the previous charge's list
-  * @returns {any} Promise which return the list of charges
-  */
-  getChargeList(limit:number=10, chargeOffset?:any) {
-    if (chargeOffset != undefined)
-      return stripe.charges.list({ customer:this.id, limit:limit, starting_after:chargeOffset }).catch(parseError);
-    else
-      return stripe.charges.list({ customer:this.id, limit:limit }).catch(parseError);
-  }
-
-  /**
-  * ## customer.getId()
-  * @returns {string} Stripe ID of the customer
-  */
-  getId() {
-    return this.id;
+  findMethodByAlias(alias) {
+    return this._sources.find(card => card.alias == alias);
   }
 }
+
+//
+// private function to get metadata keys
+function metadataElements(metadata,key) {
+  return Object.keys(metadata).filter(k => k.indexOf(key)>-1);
+}
+
+
+//
+// private function to decode metadata
+function parseAddress(metadata) {
+  const keys = metadataElements(metadata,'addr');
+  const addresses = [];
+  keys.forEach(key => {
+    try{
+      const address = JSON.parse(metadata[key]) as Address;
+      addresses.push(address);  
+    }catch(err){
+      console.log('---- DBG error parseAddress',err);
+    }
+  })
+  return addresses;
+}
+
 
 function parseError(err) {
-  throw new Error(err);
+  Config.option('debug') && console.log('---- DBG error',err);
+  return new Error(err);
 }
 
-export interface Source {
-  type:Payment;
-  sourceId:string;
-  owner:string;
-}
 
-export interface Card extends Source {
-  last4:string;
-  exp_month:number;
-  exp_year:number;
-  brand:string;
+function parseMethod(method) {
+  assert(method);
+  const id = xor(method.id);
+  method = method.card||method;
+  const alias = xor(method.fingerprint);
+
+  return {
+    id:id,
+    alias:alias,
+    country:method.country,
+    last4:method.last4,
+    issuer:method.brand,
+    funding: method.funding,
+    fingerprint:method.fingerprint,
+    expiry:method.exp_month+'/'+method.exp_year,
+    updated:Date.now(),
+    provider:'stripe'
+  };
+
 }

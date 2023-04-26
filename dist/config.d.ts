@@ -1,11 +1,9 @@
-export declare class Config {
-    private stripeVersion;
-    private isConfigured;
+export default class Config {
+    private stripeApiVersion;
+    private stripePrivatekey;
     private debug;
     private allowMaxAmount;
     private sandbox;
-    private publickey;
-    private privatekey;
     private apikey;
     private secret;
     private currency;
@@ -14,7 +12,7 @@ export declare class Config {
     private static settings;
     private constructor();
     static reset(): void;
-    static debug(message: string): void;
-    static configure(opts: any): void;
-    static option(option: any, value?: any): any;
+    static configure(opts: any): any;
+    static option(option: string, value?: any): any;
 }
+export declare const $config: any;

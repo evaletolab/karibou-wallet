@@ -3,28 +3,36 @@
  * psp error: http://docs.openstream.ch/payment-provider/wallet-error-messages/
  */
 
-var assert = require('assert');
-var should = require('should');
 
-describe.skip("tools", function(){
-  var config = require('../lib/config');
-  var tools=require('../lib/tools');
+const config =require("../dist/config").default;
+const payments = require("../dist/payments");
+const should = require('should');
 
 
+describe("payment.tools", function(){
 
   before(function(done){
     done()
   });
 
 
+  it("XOR encryp/decrypt with custom pkey", ()=>{
+    const hex = payments.xor("Hello World","test_123456");
+    payments.unxor(hex,"test_123456").should.equal('Hello World');
+  })
 
-  it("tools.dateFromExpiry", function(done){
-    var date=new Date(2017,1,0,23,59,0,0);
+  it("XOR encryp/decrypt with config pkey", ()=>{
+    const hex = payments.xor("Hello World");
+    payments.unxor(hex).should.equal('Hello World');
+  })
+
+  it("payments.dateFromExpiry", function(done){
+    const date=new Date(2017,1,0,23,59,0,0);
     // console.log(date)
-    tools.dateFromExpiry('01/2017').getTime().should.equal(date.getTime())
-    tools.dateFromExpiry('1/2017').getTime().should.equal(date.getTime())
-    tools.dateFromExpiry('1/17').getTime().should.equal(date.getTime())
-    tools.dateFromExpiry('1/017').getTime().should.equal(date.getTime())
+    payments.dateFromExpiry('01/2017').getTime().should.equal(date.getTime())
+    payments.dateFromExpiry('1/2017').getTime().should.equal(date.getTime())
+    payments.dateFromExpiry('1/17').getTime().should.equal(date.getTime())
+    payments.dateFromExpiry('1/017').getTime().should.equal(date.getTime())
     done()
   });
 

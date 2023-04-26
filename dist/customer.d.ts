@@ -1,30 +1,60 @@
-import { Payment } from './payments.enum';
-export declare class Customer {
-    private id;
-    private sources;
-    private map;
-    private email;
-    private lastname;
-    private firstname;
-    constructor(json: string);
-    static create(email: string, lastname: string, firstname: string): any;
-    save(): string;
-    addMethod(sourceData: Source, token?: string): any;
-    updateMethod(sourceId: string, sourceData: Source): void;
-    removeMethod(sourceId: string): any;
-    getMethodList(): Promise<any[]>;
-    setStripeMethod(sourceId: string): any;
-    getChargeList(limit?: number, chargeOffset?: any): any;
-    getId(): string;
-}
+import Stripe from 'stripe';
+import { Payment, Address } from './payments';
 export interface Source {
     type: Payment;
-    sourceId: string;
-    owner: string;
+    id: string;
 }
 export interface Card extends Source {
+    alias: string;
+    country: string;
     last4: string;
-    exp_month: number;
-    exp_year: number;
+    issuer: string;
+    funding: string;
+    fingerprint: string;
+    expiry: string;
     brand: string;
+}
+export declare class Customer {
+    private _available;
+    private _sources;
+    private _id;
+    private _metadata;
+    private _email;
+    private _phone;
+    private _fname;
+    private _lname;
+    private _uid;
+    private _addresses;
+    private constructor();
+    get id(): string;
+    get email(): string;
+    get phone(): string;
+    get name(): {
+        familyName: string;
+        givenName: string;
+    };
+    get uid(): string;
+    get addresses(): Address[];
+    get methods(): any;
+    static create(email: string, fname: string, lname: string, phone: string, uid: string): Promise<Customer>;
+    static get(id: any): Promise<Customer>;
+    addressAdd(address: Address): Promise<void>;
+    addressRemove(address: Address): Promise<void>;
+    addressUpdate(address: Address): Promise<void>;
+    addMethodIntent(): Promise<Stripe.Response<Stripe.SetupIntent>>;
+    addMethod(token: string): Promise<{
+        id: string;
+        alias: string;
+        country: any;
+        last4: any;
+        issuer: any;
+        funding: any;
+        fingerprint: any;
+        expiry: string;
+        updated: number;
+        provider: string;
+    }>;
+    removeMethod(method: Card): Promise<void>;
+    listMethods(): Promise<any>;
+    findMethodByAlias(alias: any): any;
 }

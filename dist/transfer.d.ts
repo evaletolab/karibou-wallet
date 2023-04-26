@@ -9,11 +9,11 @@ export interface Destination {
 export declare class Transfer {
     private transaction;
     private dest;
-    private constructor(transaction, dest);
+    private constructor();
     static load(params: any): Transfer;
     save(): string;
-    execute(): any;
-    refund(account: Account, description: string, amount?: number): any;
+    execute(): Promise<void | any[]>;
+    refund(account: Account, description: string, amount?: number): Promise<void>;
     refundAll(description: string): Promise<void | any[]>;
     getState(account: Account): Destination;
 }

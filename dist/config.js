@@ -1,66 +1,53 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const util = require("util");
+exports.$config = void 0;
+const fs = require('fs');
 class Config {
-    constructor() {
-        this.isConfigured = false;
+    constructor(opts) {
         this.debug = false;
-        this.stripeVersion = '2017-06-05';
-        this.isConfigured = false;
         this.allowMaxAmount = 1000.00;
         this.sandbox = false;
         this.debug = false;
-        this.publickey = 'pk_test_Rdm8xRlYnL9jTbntvs9e788l';
-        this.privatekey = 'sk_test_7v4G5a18JptIOX2cbYAYMsun';
-        this.apikey = '123456789';
-        this.secret = 'walletapi';
-        this.currency = 'CHF';
-        this.allowedCurrencies = ['CHF'];
         this.allowMultipleSetOption = false;
-    }
-    static reset() {
-        if (process.env.NODE_ENV == 'test') {
-            Config.settings.sandbox = false;
-            Config.settings.currency = 'CHF';
-            Config.settings.allowedCurrencies = ['CHF'];
-            Config.settings.isConfigured = false;
-        }
-        else
-            throw new Error('Reset is not possible here');
-    }
-    static debug(message) {
-        if (Config.settings.debug) {
-            util.debug(message);
-        }
-    }
-    static configure(opts) {
-        Config.debug('Configuring Wallet with: \n' + util.inspect(opts));
-        if (!opts.apikey) {
-            throw new Error('Incomplete Wallet API credentials');
-        }
         Object.keys(opts).forEach(function (key) {
             Config.option(key, opts[key]);
         });
         Config.settings.isConfigured = true;
     }
+    static reset() {
+        if (process.env.NODE_ENV == 'test') {
+            Config.settings.allowMultipleSetOption = true;
+        }
+        else
+            throw new Error('Reset is not possible here');
+    }
+    static configure(opts) {
+        if (Config.settings) {
+            return Config.settings;
+        }
+        Config.settings = { isConfigured: false };
+        if (!opts.apikey) {
+            throw new Error('Incomplete Wallet API credentials');
+        }
+        return new Config(opts);
+    }
     static option(option, value) {
         if (typeof value !== 'undefined') {
-            Config.debug('Setting Wallet key `' + option + '` to `' + value.toString() + '`');
-            if (Config.settings.isConfigured &&
-                !Config.settings.allowMultipleSetOption &&
-                option !== 'currency') {
+            if (Config.settings.isConfigured && !Config.settings.allowMultipleSetOption) {
                 throw new Error('Option is already locked');
             }
             switch (option) {
-                case 'stripeVersion':
+                case 'stripeApiVersion':
+                case 'stripePrivatekey':
+                case 'karibouApikey':
                 case 'apikey':
                 case 'currency':
                 case 'secret':
-                case 'publickey':
-                case 'privatekey':
+                case 'shaSecret':
                     Config.settings[option] = value;
                     break;
                 case 'allowMaxAmount':
+                case 'reservedAmount':
                     Config.settings[option] = parseFloat(value);
                     break;
                 case 'sandbox':
@@ -85,6 +72,19 @@ class Config {
     }
     ;
 }
-Config.settings = new Config();
-exports.Config = Config;
+exports.default = Config;
+const env = (process.env.NODE_ENV || 'test'), path = require('path'), rootPath = path.normalize(__dirname + '/..'), test = (env === 'test') ? '-test' : '';
+let cfg;
+if (fs.existsSync(__dirname + '/config-' + env + '.js')) {
+    cfg = '../config-' + env;
+}
+else if (env === 'production') {
+    cfg = '../config-production';
+}
+else {
+    cfg = '../config-' + env;
+}
+const config = require(cfg);
+console.log(' load configuration for payment module using: ', cfg);
+exports.$config = Config.configure(config.wallet || config.payment);
 //# sourceMappingURL=config.js.map

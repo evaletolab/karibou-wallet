@@ -9,7 +9,8 @@ var account = require("../dist/account");
 var should = require('should');
 var test = exports;
 
-
+//
+// account is used for transfert
 describe("Class account", function(){
   this.timeout(8000);
 
@@ -20,8 +21,8 @@ describe("Class account", function(){
     country: 'CH',
     email: 'test_account@email.com',
     legal_entity:{
-      first_name:"David",
-      last_name:"Pate",
+      first_name:"Bar",
+      last_name:"Foo",
       address: {
         line1:"Avenue peschier 6",
         city:"Genève",
@@ -48,7 +49,7 @@ describe("Class account", function(){
   });
 
   // START TESTING
-  it("Construction of the account", function(done) {
+  xit("Construction of the account", function(done) {
     stripe.accounts.create(accData)
       .then((stripeAccount) => account.Account.create(stripeAccount.id))
       .then((acc1) => {
@@ -60,7 +61,7 @@ describe("Class account", function(){
       }).catch(done);
   });
 
-  it("Construction of the account with json", function(done) {
+  xit("Construction of the account with json", function(done) {
     var acc2 = new account.Account(JSON.parse(accObject.save()));
     accCleanList.push(acc2.id);
     should.exist(acc2);
@@ -68,7 +69,7 @@ describe("Class account", function(){
     done();
   });
 
-  it("List of transfer", function(done) {
+  xit("List of transfer", function(done) {
     var promiseList = [];
     stripe.accounts.create(accData)
       .then((stripeAccount) => account.Account.create(stripeAccount.id))

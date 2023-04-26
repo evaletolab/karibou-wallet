@@ -5,13 +5,10 @@
  * Licensed under GPL license (see LICENSE)
  */
 
-var config = require('../lib/config');
-var WalletError = require('../lib/error');
-var helpers = require('./fixtures/helpers');
-var assert = require('assert');
-var should = require('should');
-var test = exports;
-
+ const config =require("../dist/config").default;
+ const payments = require("../dist/payments");
+ const should = require('should');
+ 
 
 
 describe.skip("error", function(){
