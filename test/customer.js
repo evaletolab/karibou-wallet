@@ -26,6 +26,27 @@ describe("Class customer", function(){
     },
   };
 
+  const pm_trigger_auth = {
+    type: 'card',
+    card: {
+      number: '4000002500003155',
+      exp_month: 8,
+      exp_year: 2025,
+      cvc: '314',
+    },
+  };
+
+  const pm_fails = {
+    type: 'card',
+    card: {
+      number: '4000000000009995',
+      exp_month: 8,
+      exp_year: 2025,
+      cvc: '314',
+    },
+  };
+
+
   before(function(done){
     done()
   });
@@ -149,7 +170,7 @@ describe("Class customer", function(){
   });
   
   it("Add payments methods using valid informations", async function() {
-    config.option('debug',true);
+    config.option('debug',false);
     const cust = await customer.Customer.get(custCleanList[0]);
     const pm = await $stripe.paymentMethods.create(pm_valid);
 
@@ -169,7 +190,6 @@ describe("Class customer", function(){
 
   it("Update payments methods using same valid card", async function() {
 
-    config.option('debug',true);
     const cust = await customer.Customer.get(custCleanList[0]);
     const pm_update = Object.assign({},pm_valid);
     pm_update.card.exp_year = 2026;
@@ -179,10 +199,80 @@ describe("Class customer", function(){
 
   });
 
+  it("Add payments methods using other currency", async function() {
+
+    const cust = await customer.Customer.get(custCleanList[0]);
+    const pm_update = Object.assign({},pm_valid);
+    pm_update.card.exp_year = 2026;
+    const payment = await cust.addMethod('pm_card_fr');
+    payment.country.should.equal('FR')
+
+  });
+
+
+  it("Add payments methods throw ExpiredCard", async function() {
+    //config.option('debug',true);
+    const cust = await customer.Customer.get(custCleanList[0]);
+    const pm = await $stripe.paymentMethods.create(pm_fails);
+
+    try{
+      const payment = await cust.addMethod('pm_card_chargeDeclinedExpiredCard');
+      should.not.exist(payment);
+    }catch(err) {
+      err.message.should.containEql('expiré')
+      should.exist(err);
+    }
+  });
+
+  it("Add payments methods throw IncorrectCvc", async function() {
+    //config.option('debug',true);
+    const cust = await customer.Customer.get(custCleanList[0]);
+    const pm = await $stripe.paymentMethods.create(pm_fails);
+
+    try{
+      const payment = await cust.addMethod('pm_card_chargeDeclinedIncorrectCvc');
+      should.not.exist(payment);
+    }catch(err) {
+      //console.log('----',err.message)    
+      err.message.should.containEql('code de sécurité')
+      should.exist(err);
+    }
+  });
+
+  it("Add payments methods throw chargeDeclined", async function() {
+    //config.option('debug',true);
+    const cust = await customer.Customer.get(custCleanList[0]);
+    const pm = await $stripe.paymentMethods.create(pm_fails);
+
+    try{
+      const payment = await cust.addMethod('pm_card_visa_chargeDeclined');
+      should.not.exist(payment);
+    }catch(err) {
+      err.message.should.containEql('La banque a refusée')
+      should.exist(err);
+    }
+  });
+  
+  //
+  // 3d secure is always managed from fontend
+  xit("Add payments methods throw authenticationRequired", async function() {
+    config.option('debug',true);
+    const cust = await customer.Customer.get(custCleanList[0]);
+    try{
+      const payment = await cust.addMethod('pm_card_authenticationRequired');
+      should.not.exist(payment);
+    }catch(err) {
+      console.log('----',err.message)    
+      should.exist(err);
+
+    }
+  });
+
+
   it("List all payment's method return latest method", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);    
-    cust.methods.length.should.equal(1);
-    cust.methods[0].expiry.should.equal('8/2026')
+    cust.methods.length.should.equal(2);
+    cust.methods[0].expiry.should.equal('4/2024')
   });
 
   xit("Remove a payment's method", function(done) {

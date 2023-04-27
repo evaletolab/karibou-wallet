@@ -6,7 +6,7 @@
 
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
-import { Payment, $stripe, xor, unxor, Address } from './payments';
+import { Payment, $stripe, xor, unxor, Address, stripeParseError } from './payments';
 import Config from './config';
 
 
@@ -82,7 +82,6 @@ export class Customer {
   get id() {
     return (this._id);
   }
-
   
   get email() {
     return this._email;
@@ -244,6 +243,12 @@ export class Customer {
   async addMethod(token:string) {
     try{
       const method:any = await $stripe.paymentMethods.attach(token,{customer:this._id});
+      if(method.status == "requires_action") {
+        //
+        // 3D secure is fully managed by the frontend ()
+        //
+        throw new Error('addMethod requires_confirmation');
+      }
       const card = parseMethod(method);
 
       //
@@ -352,8 +357,9 @@ function parseAddress(metadata) {
 
 
 function parseError(err) {
-  Config.option('debug') && console.log('---- DBG error',err);
-  return new Error(err);
+  const error = stripeParseError(err);
+  Config.option('debug') && console.log('---- DBG error',error);
+  return error;
 }
 
 

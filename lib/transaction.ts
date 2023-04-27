@@ -7,8 +7,14 @@
 
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
+import Config from './config';
 import { Card, Customer } from './customer';
-import { $stripe, unxor, xor } from './payments';
+import { $stripe, stripeParseError, unxor, xor } from './payments';
+
+export type CardTest = 'pm_card_authenticationRequired'|
+                            'pm_card_visa_chargeDeclined'|
+                            'pm_card_visa_chargeDeclinedLostCard'|
+                            'pm_card_chargeDeclinedProcessingError'
 
 export interface PaymentOptions {
   oid:string;
@@ -42,6 +48,15 @@ export  class  Transaction {
 
   get oid():string{
     return (this._payment.metadata.order);
+  }
+
+
+  get status():string{
+    return (this._payment.status);
+  }
+
+  get client_secret():string{
+    return (this._payment.client_secret);
   }
 
   get paymentId():string{
@@ -128,7 +143,7 @@ export  class  Transaction {
   * @returns the transaction object
   */
 
-  static async authorize(customer:Customer,card:Card, amount:number, options:PaymentOptions) {
+  static async authorize(customer:Customer,card:Card|CardTest, amount:number, options:PaymentOptions) {
 
 		const amount_capturable = Math.round(amount*100);
 		const tx_description = "#"+options.oid+" for "+options.email;
@@ -142,23 +157,33 @@ export  class  Transaction {
 			name: options.shipping.name
 		};
 
-		const transaction = await $stripe.paymentIntents.create({
-			amount:amount_capturable,
-		  currency: "CHF",
-		  customer:customer.id,
-			payment_method: unxor(card.id), 
-			transfer_group: tx_group,
-			off_session: false,
-			capture_method:'manual', // capture amount offline (server side)
-	    confirm: true,
-			shipping: shipping,
-			description: tx_description,
-			metadata: {
-				order: options.oid
-			},
-    });
+    //
+    // trick to allow testing card
+    const obj = card as any;
+    const card_id = ((typeof obj !== 'string')? unxor(obj.id):card) as string;
 
-    return new Transaction(transaction);
+    try{
+      const transaction = await $stripe.paymentIntents.create({
+        amount:amount_capturable,
+        currency: "CHF",
+        customer:customer.id,
+        payment_method: card_id, 
+        transfer_group: tx_group,
+        off_session: false,
+        capture_method:'manual', // capture amount offline (server side)
+        confirm: true,
+        shipping: shipping,
+        description: tx_description,
+        metadata: {
+          order: options.oid
+        },
+      });
+  
+      return new Transaction(transaction);
+  
+    }catch(err) {
+      throw parseError(err);
+    }
   }
 
 
@@ -175,7 +200,7 @@ export  class  Transaction {
   }
 
   /**
-  * ## transaction.capture()
+  * ## transaction.confirm(id) 3d secure authorization
   * Capture the amount on an authorized transaction
   * @returns {any} Promise which return the charge object or a rejected Promise
   */
@@ -369,5 +394,7 @@ export  class  Transaction {
 }
 
 function parseError(err) {
-  throw new Error(err);
+  const error = stripeParseError(err);
+  Config.option('debug') && console.log('---- DBG error',error);
+  return error;
 }

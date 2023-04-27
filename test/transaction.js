@@ -19,16 +19,17 @@ describe("Class transaction", function(){
   let defaultPaymentAlias;
   let defaultTX;
 
-  const pm_valid = {
-    type: 'card',
-    card: {
-      number: '4242424242424242',
-      exp_month: 8,
-      exp_year: 2025,
-      cvc: '314',
-    },
+  const paymentOpts = {
+    oid: '01234',
+    txgroup: 'AAA',
+    email: 'foo@bar',
+    shipping: {
+        streetAdress: 'rue du rhone 69',
+        postalCode: '1208',
+        name: 'foo bar family'
+    }
   };
- 
+
 
   before(function(done){
     done();
@@ -37,25 +38,62 @@ describe("Class transaction", function(){
   after(async function () {
     await $stripe.customers.del(defaultCustomer.id);
   });
+  it("Create list of cards for testing transaction", async function(){
+    config.option('debug',false);
+    defaultCustomer = await customer.Customer.create("test@email.com","Foo","Bar","022345",1234);
+
+    //
+    // valid US - 067c7f79097066667c6477516477767d 
+    const card = await defaultCustomer.addMethod('pm_card_mastercard_prepaid');
+    defaultPaymentAlias = card.alias;
+
+
+    //
+    // pm_card_authenticationRequired
+    // pm_card_visa_chargeDeclined
+    // pm_card_visa_chargeDeclinedLostCard
+    // pm_card_chargeDeclinedProcessingError    
+  });
+
+
+
+  //
+  // https://stripe.com/docs/automated-testing
+  it("Transaction authorization throw authenticationRequired", async function() {
+    const tx = await transaction.Transaction.authorize(defaultCustomer,'pm_card_authenticationRequired',2,paymentOpts)
+    tx.should.property("status");
+    tx.status.should.equal("requires_action");
+    tx.should.property("client_secret");
+    tx.client_secret.should.containEql("pi_");
+  });
+
+  it("Transaction authorization throw chargeDeclined", async function() {
+    try{
+      const tx = await transaction.Transaction.authorize(defaultCustomer,'pm_card_visa_chargeDeclined',2,paymentOpts)
+      should.not.exist(tx);  
+    }catch(err){
+      should.exist(err);
+      err.message.should.containEql("La banque a refusée")
+    }
+  });
+
+  it("Transaction authorization throw chargeDeclinedLostCard", async function() {
+    try{
+      const tx = await transaction.Transaction.authorize(defaultCustomer,'pm_card_visa_chargeDeclinedLostCard',2,paymentOpts)
+      should.not.exist(tx);  
+    }catch(err){
+      //console.log('...',err.message)
+      should.exist(err);
+      err.message.should.containEql("la carte est déclarée perdue")
+    }
+  });
+
 
   // START TESTING
   it("Transaction create authorization", async function() {
-    defaultCustomer = await customer.Customer.create("test@email.com","Foo","Bar","022345",1234);
-    const pm = await $stripe.paymentMethods.create(pm_valid);
 
-    const card = await defaultCustomer.addMethod(pm.id);
-    defaultPaymentAlias = card.alias;
-
-    const paymentOpts = {
-      oid: '01234',
-      txgroup: 'AAA',
-      email: 'foo@bar',
-      shipping: {
-          streetAdress: 'rue du rhone 69',
-          postalCode: '1208',
-          name: 'foo bar family'
-      }
-    };
+    // load card from default customer
+    const card = defaultCustomer.findMethodByAlias(defaultPaymentAlias);
 
     const tx = await transaction.Transaction.authorize(defaultCustomer,card,2,paymentOpts)
     tx.should.property("amount");
