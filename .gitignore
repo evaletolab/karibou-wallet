@@ -5,3 +5,4 @@ config-pf.js
 node_modules
 dist
 dist/*
+config-*.json
