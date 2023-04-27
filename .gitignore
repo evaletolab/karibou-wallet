@@ -3,3 +3,5 @@
 tmp
 config-pf.js
 node_modules
+dist
+dist/*
