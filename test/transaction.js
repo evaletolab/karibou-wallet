@@ -6,8 +6,13 @@
  const config =require("../dist/config").default;
  const customer = require("../dist/customer");
  const payments = require("../dist/payments").Payment;
+ const unxor = require("../dist/payments").unxor;
+ const card_mastercard_prepaid = require("../dist/payments").card_mastercard_prepaid;
+ const card_authenticationRequired = require("../dist/payments").card_authenticationRequired;
+ const card_visa_chargeDeclined = require("../dist/payments").card_visa_chargeDeclined;
+ const card_visa_chargeDeclinedLostCard = require("../dist/payments").card_visa_chargeDeclinedLostCard;
+
  const transaction = require("../dist/transaction");
- const xor = require("../dist/payments").xor;
  const $stripe = require("../dist/payments").$stripe;
  const should = require('should');
 
@@ -22,7 +27,6 @@ describe("Class transaction", function(){
   const paymentOpts = {
     oid: '01234',
     txgroup: 'AAA',
-    email: 'foo@bar',
     shipping: {
         streetAdress: 'rue du rhone 69',
         postalCode: '1208',
@@ -44,15 +48,9 @@ describe("Class transaction", function(){
 
     //
     // valid US - 067c7f79097066667c6477516477767d 
-    const card = await defaultCustomer.addMethod('pm_card_mastercard_prepaid');
+    const card = await defaultCustomer.addMethod(unxor(card_mastercard_prepaid.id));
     defaultPaymentAlias = card.alias;
 
-
-    //
-    // pm_card_authenticationRequired
-    // pm_card_visa_chargeDeclined
-    // pm_card_visa_chargeDeclinedLostCard
-    // pm_card_chargeDeclinedProcessingError    
   });
 
 
@@ -60,7 +58,7 @@ describe("Class transaction", function(){
   //
   // https://stripe.com/docs/automated-testing
   it("Transaction authorization throw authenticationRequired", async function() {
-    const tx = await transaction.Transaction.authorize(defaultCustomer,'pm_card_authenticationRequired',2,paymentOpts)
+    const tx = await transaction.Transaction.authorize(defaultCustomer,card_authenticationRequired,2,paymentOpts)
     tx.should.property("status");
     tx.status.should.equal("requires_action");
     tx.should.property("client_secret");
@@ -69,7 +67,7 @@ describe("Class transaction", function(){
 
   it("Transaction authorization throw chargeDeclined", async function() {
     try{
-      const tx = await transaction.Transaction.authorize(defaultCustomer,'pm_card_visa_chargeDeclined',2,paymentOpts)
+      const tx = await transaction.Transaction.authorize(defaultCustomer,card_visa_chargeDeclined,2,paymentOpts)
       should.not.exist(tx);  
     }catch(err){
       should.exist(err);
@@ -79,7 +77,7 @@ describe("Class transaction", function(){
 
   it("Transaction authorization throw chargeDeclinedLostCard", async function() {
     try{
-      const tx = await transaction.Transaction.authorize(defaultCustomer,'pm_card_visa_chargeDeclinedLostCard',2,paymentOpts)
+      const tx = await transaction.Transaction.authorize(defaultCustomer,card_visa_chargeDeclinedLostCard,2,paymentOpts)
       should.not.exist(tx);  
     }catch(err){
       //console.log('...',err.message)
@@ -112,9 +110,6 @@ describe("Class transaction", function(){
     should.exist(tx.report.log);
     should.exist(tx.report.transaction);
 
-    //console.log('---- DBG report',tx._payment);
-    //console.log('---- DBG report',tx.report);
-
     defaultTX = tx.id;
   });
 
@@ -145,21 +140,17 @@ describe("Class transaction", function(){
   });
 
   it("Transaction capture amount >1 fr should success", async function() {
-    try{
-      const tx = await transaction.Transaction.get(defaultTX);
-      await tx.capture(1.0);
-      tx.amount.should.equal(1);
-      tx.authorized.should.equal(false);
-      tx.captured.should.equal(true);
-      tx.canceled.should.equal(false);
-  
-      //console.log('---- DBG report amount',tx._payment.amount);
-      //console.log('---- DBG report amount_capturable',tx._payment.amount_capturable);
-      //console.log('---- DBG report amount_received',tx._payment.amount_received);
+    const tx = await transaction.Transaction.get(defaultTX);
+    await tx.capture(1.0);
+    tx.amount.should.equal(1);
+    tx.authorized.should.equal(false);
+    tx.captured.should.equal(true);
+    tx.canceled.should.equal(false);
 
-    }catch(err) {
-      should.not.exist(err);
-    }
+    //console.log('---- DBG report amount',tx._payment.amount);
+    //console.log('---- DBG report amount_capturable',tx._payment.amount_capturable);
+    //console.log('---- DBG report amount_received',tx._payment.amount_received);
+
   });
 
   it("Transaction cancel a captured tx throw an error", async function() {

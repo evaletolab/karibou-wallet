@@ -8,13 +8,9 @@
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
 import Config from './config';
-import { Card, Customer } from './customer';
-import { $stripe, stripeParseError, unxor, xor } from './payments';
+import { Customer } from './customer';
+import { Card, $stripe, stripeParseError, unxor, xor, Payment } from './payments';
 
-export type CardTest = 'pm_card_authenticationRequired'|
-                            'pm_card_visa_chargeDeclined'|
-                            'pm_card_visa_chargeDeclinedLostCard'|
-                            'pm_card_chargeDeclinedProcessingError'
 
 export interface PaymentOptions {
   oid:string;
@@ -50,9 +46,12 @@ export  class  Transaction {
     return (this._payment.metadata.order);
   }
 
-
+  //
+  // cash balance create a direct charge (automatic paiement)
+  // subscription create a direct charge (automatic paiement)
+  // WARNING to keep track of our needs of "manual" the status paid will be => auth_paid
   get status():string{
-    return (this._payment.status);
+    return (this._payment.metadata.exended_status || this._payment.status);
   }
 
   get client_secret():string{
@@ -87,16 +86,16 @@ export  class  Transaction {
   }
 
   get requiresAction():boolean {
-    return this._payment.status == "requires_action";
+    return this.status == "requires_action";
   }
   get authorized():boolean{
-    return this._payment.status == "requires_capture";
+    return ["requires_capture","prepaid"].includes(this.status);
   }
   get captured():boolean{
-    return this._payment.status == "succeeded";
+    return ["succeeded","prepaid","refund"].includes(this.status);
   }
   get canceled():boolean{
-    return this._payment.status == "canceled";
+    return this.status == "canceled";
   }
 
   get refunded():number{
@@ -139,11 +138,18 @@ export  class  Transaction {
 
   /**
   * ## transaction.get(id)
-  * Load a transaction from a Stripe
+  * Create a new 2-steps transaction (auth & capture)
+  * - https://stripe.com/docs/payments/customer-balance#make-cash-payment
   * @returns the transaction object
   */
 
-  static async authorize(customer:Customer,card:Card|CardTest, amount:number, options:PaymentOptions) {
+  static async authorize(customer:Customer,card:Card, amount:number, options:PaymentOptions) {
+
+    assert(options.oid)
+    assert(options.shipping)
+    assert(options.shipping.streetAdress)
+    assert(options.shipping.postalCode)
+    assert(options.shipping.name)
 
 		const amount_capturable = Math.round(amount*100);
 		const tx_description = "#"+options.oid+" for "+options.email;
@@ -157,17 +163,19 @@ export  class  Transaction {
 			name: options.shipping.name
 		};
 
+
     //
-    // trick to allow testing card
-    const obj = card as any;
-    const card_id = ((typeof obj !== 'string')? unxor(obj.id):card) as string;
+    // IMPORTANT: 
+    // https://stripe.com/docs/api/idempotent_requests
+    // use idempotencyKey (oid) for safely retrying requests without accidentally 
+    // performing the same payment twice.
+    // ==> idempotencyKey: options.oid,
 
     try{
-      const transaction = await $stripe.paymentIntents.create({
+      const params={
         amount:amount_capturable,
         currency: "CHF",
         customer:customer.id,
-        payment_method: card_id, 
         transfer_group: tx_group,
         off_session: false,
         capture_method:'manual', // capture amount offline (server side)
@@ -177,7 +185,27 @@ export  class  Transaction {
         metadata: {
           order: options.oid
         },
-      });
+      } as Stripe.PaymentIntentCreateParams;
+
+      //
+      // cash balance create a direct charge
+      // manual paiement generate the status auth_paid
+      if (card.type == Payment.balance) {
+        params.payment_method_types = ['customer_balance'];
+        params.payment_method_data= {
+          type: 'customer_balance',
+        };
+        params.currency = customer.cashbalance.currency;
+        params.capture_method='automatic';
+        params.metadata.exended_status = 'prepaid';
+
+      }
+      else if (card.type == Payment.card) {
+        params.payment_method = unxor(card.id);
+        params.payment_method_types = ['card'];
+      }
+
+      const transaction = await $stripe.paymentIntents.create(params);
   
       return new Transaction(transaction);
   
@@ -199,6 +227,7 @@ export  class  Transaction {
     return new Transaction(transaction);
   }
 
+
   /**
   * ## transaction.confirm(id) 3d secure authorization
   * Capture the amount on an authorized transaction
@@ -219,9 +248,6 @@ export  class  Transaction {
   async capture(amount:number) {
     if (this.canceled){
       return Promise.reject(new Error("Transaction canceled."));
-    }
-    if (this.captured){
-      return Promise.reject(new Error("Transaction already captured."));
     }
     if (!this.authorized){
       return Promise.reject(new Error("Transaction need to be authorized."));
@@ -275,19 +301,46 @@ export  class  Transaction {
 
     //
     // normalize amount
-		amount = Math.round(amount*100);
+		const normAmount = Math.round(amount*100);
 
     try{
+
       //
-      // if amount is 0 (including shipping), cancel and mark it as paid
-      // ONLY available for payment intents
-      if(amount < 1.0) {
-        this._payment = await $stripe.paymentIntents.cancel(this._payment.id);
-      } else {
-        this._payment = await $stripe.paymentIntents.capture( this._payment.id , { 
-          amount_to_capture: amount 
-        });  
+      // case of cash balance
+      if(this.status == "prepaid") {
+
+        if(normAmount == this._payment.amount) {
+          this._payment.metadata.exended_status = null;
+          this._payment = await $stripe.paymentIntents.update( this._payment.id , { 
+            metadata:this._payment.metadata
+          });  
+
+        } 
+        //
+        // total amount is not the same 
+        else {
+          await this.refund(amount);  
+        }
+
+
+      } 
+      //
+      // case of Card
+      else {
+        //
+        // if amount is 0 (including shipping), cancel and mark it as paid
+        // ONLY available for payment intents
+        if(normAmount < 1.0) {
+          this._payment = await $stripe.paymentIntents.cancel(this._payment.id);
+        } else {
+          this._payment = await $stripe.paymentIntents.capture( this._payment.id , { 
+            amount_to_capture: normAmount 
+          });  
+        }
+
       }
+
+
       return this;
     }catch(err) {
 
@@ -366,7 +419,7 @@ export  class  Transaction {
           payment_intent: this._payment.id, 
           amount:amount,
           metadata:{
-            order:this.oid
+            order:this.oid,
           }
         });
       } else {
@@ -380,8 +433,11 @@ export  class  Transaction {
   
       //
       // update the total refund on orginal transaction
+      this._payment.metadata.exended_status = "refund";
+      this._payment.metadata.refund = (this._refund.amount + this.refunded * 100 )+'';
+
       this._payment = await $stripe.paymentIntents.update(this._payment.id,{
-        metadata:{refund: (this._refund.amount + this.refunded * 100 )}
+        metadata:this._payment.metadata
       })
   
       return this;

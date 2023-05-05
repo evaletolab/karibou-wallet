@@ -1,31 +1,7 @@
-/**
-* #customer.ts
-* Copyright (c)2014, by David Pate <pate.david1@gmail.com>
-* Licensed under GPL license (see LICENSE)
-*/
-
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
-import { Payment, $stripe, xor, unxor, Address, stripeParseError } from './payments';
+import { Payment, $stripe, xor, unxor, Address, stripeParseError, Card, CashBalance, crypto_sha256, crypto_randomToken, crypto_fingerprint } from './payments';
 import Config from './config';
-
-
-export interface Source {
-  type:Payment;
-  id:string;
-}
-
-export interface Card extends Source {
-  alias:string;
-  country:string;
-  last4:string;
-  issuer:string;
-  funding:string;
-  fingerprint:string;
-  expiry:string;
-  brand:string;
-}
-
 
 
 export class Customer {
@@ -34,13 +10,14 @@ export class Customer {
   private _sources:Stripe.Card[]|any;
   private _id:string;
   private _metadata:any;
+  private _cashbalance:any;
 
   //
   // phone or email share the same role of identity
   private _email:string;
   private _phone:string;
   private _fname:string;
-  private _lname:string;
+  private _lname:string;  
 
   //
   // mapped with backend
@@ -55,7 +32,7 @@ export class Customer {
    * @param  customer created by Stripe
    * @constructor
    */
-  private constructor(id:string,email:string, phone: string, metadata:any) {
+  private constructor(id:string,email:string, phone: string, cashbalance:any, metadata:any) {
     assert(id);
     assert(email);
     assert(phone);
@@ -70,6 +47,7 @@ export class Customer {
     this._uid = metadata.uid;
     this._id = id;
     this._metadata = metadata;
+    this._cashbalance = cashbalance||{};
 
     //
     // when loading existant customer
@@ -111,6 +89,20 @@ export class Customer {
     return this._sources.slice();
   }
 
+  get cashbalance() {
+    if(this._cashbalance.available){
+      const available = Object.assign({},this._cashbalance.available);
+      const balance = Object.assign({},this._cashbalance,{
+        available
+      });
+  
+      const currency = Object.keys(balance.available)[0];
+      balance.available[currency] = balance.available[currency]/100
+      balance['currency']=currency;
+      return balance;
+    }
+    return this._cashbalance;
+  }
 
   /**
   * ## customer.create()
@@ -123,10 +115,11 @@ export class Customer {
         description: fname + ' ' + lname + ' id:'+uid,
         email: email,
         phone,
-        metadata: {uid,fname, lname}
+        metadata: {uid,fname, lname},
+        expand: ['cash_balance']
       });  
 
-      return new Customer(customer.id,email,phone,customer.metadata); 
+      return new Customer(customer.id,email,phone,customer.cash_balance,customer.metadata); 
     }catch(err) {
       throw parseError(err);
     } 
@@ -147,11 +140,12 @@ export class Customer {
   */
   static async get(id) {
     try{
-      const stripe = await $stripe.customers.retrieve(id) as any;
+      const stripe = await $stripe.customers.retrieve(id,{expand: ['cash_balance']}) as any;
       const customer = new Customer(
         stripe.id,
         stripe.email,
         stripe.phone,
+        stripe.cash_balance,
         stripe.metadata
       ); 
       await customer.listMethods();
@@ -160,8 +154,6 @@ export class Customer {
       throw parseError(err);
     } 
   }
-
-
 
   async addressAdd(address: Address) {
     assert(this._metadata.uid);
@@ -238,6 +230,10 @@ export class Customer {
   /**
   * ## customer.addMethod()
   * attach method of payment to the customer
+  * - https://stripe.com/en-gb-ch/guides/payment-methods-guide
+  * - https://stripe.com/docs/payments/wallets
+  * - https://stripe.com/docs/connect/crypto-payouts
+  * - https://stripe.com/docs/billing/customer/balance
   * @returns the payment method object
   */
   async addMethod(token:string) {
@@ -266,6 +262,97 @@ export class Customer {
     } 
   }
 
+  //
+  //
+  // A customer’s cash balance represents funds that they can use for futur payment. 
+  // By default customer dosen't have access to his cash balance
+  // We can activate his cash balance and also authorize a amount of credit 
+  // that represents liability between us and the customer.
+  async createCashBalance(month:string,year:string, credit?:number):Promise<CashBalance>{
+    credit = credit||0;
+    const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
+    const id = crypto_randomToken();
+
+    //
+    // if cash balance exist, a updated one is created
+
+    // if(this._metadata['cashbalance']) {
+    //   throw new Error("Cash balance already exist");
+    // }
+
+    const cashbalance:CashBalance = {
+      type:Payment.balance,
+      id:xor(id),
+      alias:(fingerprint),
+      expiry:month+'/'+year,
+      funding:credit?'credit':'debit',
+      limit:credit,
+      issuer:'invoice'
+    }
+
+
+
+    //
+    // expose Cash Balance to this customer
+    this._metadata['cashbalance'] = JSON.stringify(cashbalance,null,0);
+    const customer = await $stripe.customers.update(
+      this._id,
+      {metadata: this._metadata,expand:['cash_balance']}
+    );
+
+    this._cashbalance = customer.cash_balance ||{};
+    this._metadata = customer.metadata;
+    this._addresses = parseAddress(customer.metadata);  
+    this._sources.push(cashbalance)
+
+    return cashbalance;
+  }
+
+  async listBankTransfer(){
+    //
+    // the installed versions of stripe and @type/stripe doesn't support the 
+    // API listCashBalanceTransactions, I have to add it
+    (<any>$stripe.customers).listCashBalanceTransactions = Stripe.StripeResource.method({
+      method: 'GET',
+      path: '/{customer}/cash_balance_transactions',
+      methodType: 'list',
+    });
+    const cashBalanceTransactions = await (<any>$stripe.customers).listCashBalanceTransactions(
+      this.id,
+      {limit: 15}
+    );    
+
+    return cashBalanceTransactions.data;
+  }
+
+  /**
+  * ## customer.listMethods()
+  * List of all the payment's method of the customer
+  * @returns {any[]} return the list of available methods
+  */
+  async listMethods() {
+    try{
+      this._sources = await $stripe.paymentMethods.list({
+        customer:this._id,
+        type:'card'
+      });  
+      this._sources = this._sources.data.map(parseMethod);
+
+      //
+      // cashbalance
+      const cashbalance = this._metadata['cashbalance'];
+      if(cashbalance) {
+        const payment = JSON.parse(cashbalance) as CashBalance;
+        payment.limit = payment.limit ? parseFloat(payment.limit+''):0;
+
+        this._sources.push(payment);        
+      }
+
+      return this._sources.slice();
+    }catch(err){
+      throw parseError(err);
+    }
+  }
 
   /**
   * ## customer.removeMethod()
@@ -278,7 +365,20 @@ export class Customer {
       const index:number= this._sources.findIndex(src => src.id == method.id);
 
       if (index == -1) {
-        throw new Error("Source ID not found");
+        throw new Error("Source ID not found:"+method.id);
+      }
+
+      //
+      // remove vash balance payment method
+      if(this._sources[index].issuer=='invoice'){
+        this._metadata['cashbalance'] = null;
+        const customer = await $stripe.customers.update(
+          this._id,
+          {metadata: this._metadata}
+        );
+    
+        this._sources.splice(index, 1);
+        return;
       }
   
       const card_id = unxor(method.id);
@@ -301,7 +401,7 @@ export class Customer {
         confirmation = await $stripe.customers.deleteSource(this._id,card_id);
         this._sources.splice(index, 1);
       }
-      console.log(" --- DBG removeMethod ",confirmation);
+      //console.log(" --- DBG removeMethod ",confirmation.customer);
   
     }catch(err) {
       throw (parseError(err));
@@ -309,27 +409,10 @@ export class Customer {
 
   }
 
-  /**
-  * ## customer.listMethods()
-  * List of all the payment's method of the customer
-  * @returns {any[]} return the list of available methods
-  */
-  async listMethods() {
-    try{
-      this._sources = await $stripe.paymentMethods.list({
-        customer:this._id,
-        type:'card'
-      });  
-      this._sources = this._sources.data.map(parseMethod);
-      return this._sources.slice();
-    }catch(err){
-      throw parseError(err);
-    }
-  }
 
   findMethodByAlias(alias) {
     return this._sources.find(card => card.alias == alias);
-  }
+  }  
 }
 
 //
@@ -368,8 +451,9 @@ function parseMethod(method) {
   const id = xor(method.id);
   method = method.card||method;
   const alias = xor(method.fingerprint);
-
+  // FIXME method type is always 1
   return {
+    type:parseInt(method.type||1),
     id:id,
     alias:alias,
     country:method.country,

@@ -5,12 +5,20 @@
 
  const config =require("../dist/config").default;
  const customer = require("../dist/customer");
+ const transaction = require("../dist/transaction");
  const payments = require("../dist/payments").Payment;
+ const unxor = require("../dist/payments").unxor;
+ const card_mastercard_prepaid = require("../dist/payments").card_mastercard_prepaid;
  const subscription = require("../dist/subscription.contract");
  const $stripe = require("../dist/payments").$stripe;
  const should = require('should');
  const cartItems = require('./fixtures/cart.items');
+const { default: Webhook,WebhookContent } = require("../dist/webhook");
 
+
+ //
+ // stripe test subscription with fake clock 
+ // https://stripe.com/docs/billing/testing/test-clocks?dashboard-or-api=api
  const weekdays = "dimanche_lundi_mardi_mercredi_jeudi_vendredi_samedi".split('_');
 
 describe("Class subscription", function(){
@@ -19,20 +27,11 @@ describe("Class subscription", function(){
   let defaultCustomer;
   let defaultPaymentAlias;
   let defaultSub;
+  let defaultTx;
 
   // start next week
   let dateValid = new Date(Date.now() + 86400000*7);
   let pausedUntil = new Date(Date.now() + 86400000*30);
-
-  const pm_valid = {
-    type: 'card',
-    card: {
-      number: '4242424242424242',
-      exp_month: 8,
-      exp_year: 2025,
-      cvc: '314',
-    },
-  };
  
   const shipping = {
     streetAdress: 'rue du rhone 69',
@@ -43,11 +42,23 @@ describe("Class subscription", function(){
     lng:2
   };
 
+  const paymentOpts = {
+    oid: '01234',
+    txgroup: 'AAA',
+    shipping: {
+        streetAdress: 'rue du rhone 69',
+        postalCode: '1208',
+        name: 'Cash balance testing family'
+    }
+  };
+
+
 
   before(async function(){
-    defaultCustomer = await customer.Customer.create("test@email.com","Foo","Bar","022345",1234);
-    const pm = await $stripe.paymentMethods.create(pm_valid);
-    const card = await defaultCustomer.addMethod(pm.id);
+    defaultCustomer = await customer.Customer.create("subscription@email.com","Foo","Bar","022345",1234);
+    const card = await defaultCustomer.addMethod(unxor(card_mastercard_prepaid.id));
+    defaultTx = await transaction.Transaction.authorize(defaultCustomer,card,2,paymentOpts)
+
     defaultPaymentAlias = card.alias;
   });
 
@@ -73,6 +84,7 @@ describe("Class subscription", function(){
     defaultSub.should.property("items");
     defaultSub.items.length.should.equal(2);
 
+    // console.log('---- DBG sub',defaultSub);
     // console.log('---- DBG sub',defaultSub.id);
     // console.log('---- DBG sub',defaultSub.description);
     // console.log('---- DBG sub',defaultSub.status);
@@ -102,6 +114,19 @@ describe("Class subscription", function(){
     // console.log('---- DBG sub',defaultSub.status);
     // console.log('---- DBG sub',defaultSub.interval);
     // console.log('---- DBG sub',defaultSub.items[0]);
+  });
+
+  it("SubscriptionContract get from webhook", async function() {
+    config.option('debug',true);
+
+    defaultSub = await subscription.SubscriptionContract.get(defaultSub.id)
+
+    defaultSub.should.property("id");
+    defaultSub.should.property("status");
+    defaultSub.should.property("shipping");
+    defaultSub.should.property("items");
+    defaultSub.items.length.should.equal(1);
+
   });
 
   it("list all SubscriptionContract for one customer", async function() {
@@ -134,8 +159,79 @@ describe("Class subscription", function(){
 
     should.exist(contract);
     await contract.resumeManualy();
-    console.log('\n-- ',contract.status,contract.description,defaultCustomer.name, contract.pausedUntil);        
+    contract.status.should.equal('active');
+    // console.log('\n-- ',contract.status,contract.description,defaultCustomer.name, contract.pausedUntil);        
   });
 
+
+
+  //
+  // testing webhook
+  // https://github.com/stripe/stripe-node/blob/master/README.md#testing-webhook-signing
+  // https://stripe.com/docs/billing/subscriptions/webhooks#payment-failures
+  // customer.subscription.paused	
+  // customer.subscription.resumed
+  // customer.subscription.trial_will_end	
+  // payment_intent.created	
+  // payment_intent.succeeded	
+  // invoice.payment_failed
+  // invoice.upcoming
+
+  // Simple weekly souscription 
+  it("Webhook.parse invoice.upcoming", async function() {
+    config.option('debug',true);
+    const EVENT_upcoming = {
+      type: 'invoice.upcoming',
+      data: {object:{
+        subscription:defaultSub.id
+      }}      
+    };
+    try{
+      const content = await Webhook.parse(EVENT_upcoming,'hello');
+      content.contract.id.should.equal(defaultSub.id);
+      content.error.should.equal(false);      
+    }catch(err) {
+      console.log('---ERR',err)
+    }
+  });
+	
+
+  it("Webhook.parse invoice.payment_failed", async function() {
+    config.option('debug',true);
+    const EVENT_payment_failed = {
+      type: 'invoice.payment_failed',
+      data: {object:{
+        subscription:defaultSub.id,
+        payment_intent: defaultTx.id
+      }}      
+    };
+    try{
+      const content = await Webhook.parse(EVENT_payment_failed,'hello');
+      content.contract.id.should.equal(defaultSub.id);
+      content.transaction.id.should.equal(defaultTx.id);
+      content.error.should.equal(true);      
+    }catch(err) {
+      console.log('---ERR',err)
+    }
+  });
+	
+
+  it("Webhook.parse invoice.payment_succeeded", async function() {
+    config.option('debug',true);
+    const EVENT_payment_succeeded = {
+      type: 'invoice.payment_succeeded',
+      data: {object:{
+        subscription:defaultSub.id,
+      }}      
+    };
+    try{
+      const content = await Webhook.parse(EVENT_payment_succeeded,'hello');
+      content.contract.id.should.equal(defaultSub.id);
+      content.error.should.equal(false);      
+    }catch(err) {
+      console.log('---ERR',err)
+    }
+  });
+	  
 
 });

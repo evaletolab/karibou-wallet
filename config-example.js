@@ -10,6 +10,7 @@ module.exports = {
     debug:true,
     shaSecret:'1234',
     stripePrivatekey:"sk_...p",
-    stripeApiVersion:'2020-08-27'
+    stripeApiVersion:'2020-08-27',
+    webhookSecret: '123'
   }
 }

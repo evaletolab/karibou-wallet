@@ -28,7 +28,7 @@ describe("config", function(){
     should.exists(config.option);
     config.option('apikey').should.equal('123456789');
     config.option('currency').should.equal('CHF');
-    config.option('stripeApiVersion').should.equal('2020-08-27');
+    config.option('stripeApiVersion').should.equal('2022-11-15');
     
     //config.option('enabled').should.equal(true);
     config.option('debug').should.equal(true);

@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
-import { Card, Customer } from './customer';
-import { $stripe, Address, unxor } from './payments';
+import { Customer } from './customer';
+import { $stripe, Address, Card, unxor } from './payments';
 import Config from './config';
 
 export type Interval = Stripe.Plan.Interval;
@@ -229,7 +229,7 @@ export class SubscriptionContract {
     const metadata = {address: JSON.stringify(shipping,null,0),dayOfWeek};
 
     const description = "Contrat : " + interval;
-    // FIXME, manage SCA or pexpired card in subscripton workflow
+    // FIXME, manage SCA or pexpired card in subscription workflow
     //
     // payment_behavior for 3ds or expired card 
     // - pending_if_incomplete is used when update existing subscription
@@ -251,6 +251,20 @@ export class SubscriptionContract {
     }catch(err) {
       throw parseError(err);
     }
+  }
+
+  /**
+  * ## subscriptionContract.get()
+  * @returns a Contract instance with all context data in memory
+  */
+   static async get(id) {
+    try{
+      const stripe = await $stripe.subscriptions.retrieve(id) as any;
+      const subscription = new SubscriptionContract(stripe); 
+      return subscription;
+    }catch(err) {
+      throw parseError(err);
+    } 
   }
 
   //

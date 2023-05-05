@@ -15,10 +15,39 @@ describe("payment.tools", function(){
     done()
   });
 
+  it("sha256 stripe", ()=>{
+    const hex = payments.crypto_sha256("sk_test_514n7ggBTMLb4og7PYz1hmiF2a2lXhjf5246V9yUvNJudBvVeYuRwq2VNNtxid57rwem8Hg2WiD8jZVAz9ZZ5vucX00C2Rk7WPp","base64");
+    console.log('---',hex)
+    // "c2tfdGVzdF9FU0RkYlVUckxvNGU5U0M3dW9RcWxoZDI6"
+  })
 
+  it("sha256 should return hex", ()=>{
+    const hex = payments.crypto_sha256("Hello World","hex");
+    const regex = /[0-9A-Fa-f]{32}/g;
+    regex.test(hex).should.equal(true);
+    hex.length.should.equal(64);
+  })
+
+
+  it("crypto_fingerprint should return hex", ()=>{
+    const hex = payments.crypto_fingerprint("Hello World","hex");
+    const regex = /[0-9A-Fa-f]{32}/g;
+    regex.test(hex).should.equal(true);
+  })  
+
+
+  
+  it("XOR encryp/decrypt crypto_randomToken", ()=>{
+    const rand = payments.crypto_randomToken();
+    const hex = payments.xor(rand,"test_123456");
+    payments.unxor(hex,"test_123456").should.equal(rand);
+  })
+
+  //
+  // WARNING pm_1N2uD...Qt is not an hex number!
   it("XOR encryp/decrypt with custom pkey", ()=>{
-    const hex = payments.xor("Hello World","test_123456");
-    payments.unxor(hex,"test_123456").should.equal('Hello World');
+    const hex = payments.xor("pm_1N2uD4BTMLb4og7P1hMi07Qt","test_123456");
+    payments.unxor(hex,"test_123456").should.equal('pm_1N2uD4BTMLb4og7P1hMi07Qt');
   })
 
   it("XOR encryp/decrypt with config pkey", ()=>{

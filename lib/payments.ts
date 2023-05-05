@@ -1,11 +1,38 @@
 import Config from './config';
 import Stripe from 'stripe';
+import { createHash, randomBytes } from 'crypto';
 
 export enum Payment {
   card = 1,
   sepa,
   balance,
   bitcoin  
+}
+
+
+export interface Source {
+  type:Payment;
+  id:string;
+}
+
+export interface Card extends Source {
+  alias:string;
+  country:string;
+  last4:string;
+  issuer:string;
+  funding:string;
+  fingerprint:string;
+  expiry:string;
+  brand:string;
+}
+
+
+export interface CashBalance extends Source {
+  alias:string;
+  issuer:"invoice";
+  funding:string;
+  expiry:string;
+	limit:number;
 }
 
 
@@ -26,9 +53,106 @@ export interface Address {
   lng:number;
 }
 
+// Helper to parse Year
+export const parseYear = function(year) {
+  if (!year) { return; }
+  let yearVal;
+  year = parseInt(year, 10);
+  if (year < 10) {
+    yearVal = normalizeYear(10, year);
+  } else if (year >= 10 && year < 100) {
+    yearVal = normalizeYear(100, year)-2000;
+  } else if (year >= 2000 && year < 2050){
+    yearVal = parseInt(year)-2000;
+  } else {
+    yearVal = year;
+  }
+  return yearVal+2000;
+}
+
+// Helper for year normalization
+export const normalizeYear = function (order, year) {
+  return (Math.floor(new Date().getFullYear() / order) * order) + year;
+}
+
+// Helper for expiry string decode
+export const readExpiry=function (expiryStr) {
+  if(expiryStr===undefined)return;
+  var expiry=expiryStr.split('/'),
+      year=parseYear(expiry[1]),month=parseInt(expiry[0]);
+
+
+  // not a good date
+  if(isNaN(month)||year===undefined||year>2050||year<2000||month<1||month>12){
+    return;
+  }
+  return [year,month];
+}
+
+
+export const dateFromExpiry = function (expiryStr) {
+  var expiry=readExpiry(expiryStr);
+  if(expiry&&expiry.length){
+    return new Date(expiry[0], expiry[1],0,23,59,0,0);
+  }
+}
+
+//
+// simple XOR encryption
+export const xor = function(text:string, pkey?:string) :string {
+  pkey = pkey || Config.option('shaSecret');
+
+	//
+	// check if text is hex content
+	const ishex = /[0-9A-Fa-f]{0,*}/g;
+
+	//ishex.test(text);
+
+	//
+	// create buffer from source string or hex
+  const data = (ishex.test(text))?
+		Uint8Array.from(text.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))):
+		Uint8Array.from(Array.from(text).map(char => char.charCodeAt(0)));
+  const key = Uint8Array.from(Array.from(pkey).map(char => char.charCodeAt(0)));
+
+
+  // encoding are hex,base64,ascii, utf8
+  const uint8 =  data.map((digit, i) => {
+    return (digit ^ keyNumberAt(key, i));
+  });
+
+  return Buffer.from(uint8).toString('hex');
+}
+
+export const unxor = function(hex:string, pkey?:string) :string {   
+  pkey = pkey || Config.option('shaSecret');
+  const data = Uint8Array.from(hex.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
+  const key = Uint8Array.from(Array.from(pkey).map(char => char.charCodeAt(0)));
+  const uint8 = data.map((digit, i) => {
+    return ( digit ^ keyNumberAt(key, i) );
+  });
+	const encoding = uint8.some(char => char >=127) ? 'hex':'ascii';
+  return Buffer.from(uint8).toString(encoding);
+}
+
+//
+// WARNING: use array of uint8 to encode sha256 with xor
+export const crypto_fingerprint = function(input) {
+	const hash=(crypto_sha256(input,'hex'));
+	return xor(hash);
+}
+
+export const crypto_randomToken = function() {
+	const hex = randomBytes(16).toString('hex');
+	return hex;
+}
+
+export const crypto_sha256 = function(input:string,output) {
+	return createHash('sha256').update(input).digest(output);
+}
+
 //
 // stripe error
-
 export function stripeParseError(err) {
 	//
 	// err.code
@@ -165,75 +289,34 @@ export function stripeParseError(err) {
 	return err
 }
 
-// Helper to parse Year
-export const parseYear = function(year) {
-  if (!year) { return; }
-  let yearVal;
-  year = parseInt(year, 10);
-  if (year < 10) {
-    yearVal = this.normalizeYear(10, year);
-  } else if (year >= 10 && year < 100) {
-    yearVal = this.normalizeYear(100, year)-2000;
-  } else if (year >= 2000 && year < 2050){
-    yearVal = parseInt(year)-2000;
-  } else {
-    yearVal = year;
-  }
-  return yearVal+2000;
-}
-
-// Helper for year normalization
-export const normalizeYear = function (order, year) {
-  return (Math.floor(new Date().getFullYear() / order) * order) + year;
-}
-
-// Helper for expiry string decode
-export const readExpiry=function (expiryStr) {
-  if(expiryStr===undefined)return;
-  var expiry=expiryStr.split('/'),
-      year=this.parseYear(expiry[1]),month=parseInt(expiry[0]);
-
-
-  // not a good date
-  if(isNaN(month)||year===undefined||year>2050||year<2000||month<1||month>12){
-    return;
-  }
-  return [year,month];
-}
-
-
-export const dateFromExpiry = function (expiryStr) {
-  var expiry=this.readExpiry(expiryStr);
-  if(expiry&&expiry.length){
-    return new Date(expiry[0], expiry[1],0,23,59,0,0);
-  }
-}
-
 //
-// simple XOR encryption
+// export instances variables
 
-export const xor = function(text:string, pkey?:string) :string {
-  pkey = pkey || Config.option('shaSecret');
-  const data = Uint8Array.from(Array.from(text).map(char => char.charCodeAt(0)));
-  const key = Uint8Array.from(Array.from(pkey).map(char => char.charCodeAt(0)));
+export const card_mastercard_prepaid = {
+	type:Payment.card,
+	id: xor('pm_card_mastercard_prepaid')
+} as Card;
 
-  // encoding are hex,base64,ascii, utf8
-  const uint8 =  data.map((digit, i) => {
-    return (digit ^ keyNumberAt(key, i));
-  });
-  return Buffer.from(uint8).toString('hex');
-}
+export const card_authenticationRequired = {
+	type:Payment.card,
+	id: xor('pm_card_authenticationRequired')
+} as Card;
 
-export const unxor = function(hex:string, pkey?:string) :string {   
-  pkey = pkey || Config.option('shaSecret');
-  const text = Buffer.from(hex, 'hex').toString();
-  const data = Uint8Array.from(Array.from(text).map(char => char.charCodeAt(0)));
-  const key = Uint8Array.from(Array.from(pkey).map(char => char.charCodeAt(0)));
-  const uint8 = data.map((digit, i) => {
-    return ( digit ^ keyNumberAt(key, i) );
-  });
-  return Buffer.from(uint8).toString();
-}
+export const card_visa_chargeDeclined = {
+	type:Payment.card,
+	id: xor('pm_card_visa_chargeDeclined')
+} as Card;
+
+export const card_visa_chargeDeclinedLostCard = {
+	type:Payment.card,
+	id: xor('pm_card_visa_chargeDeclinedLostCard')
+} as Card;
+
+export const pm_card_chargeDeclinedProcessingError = {
+	type:Payment.card,
+	id: xor('pm_card_chargeDeclinedProcessingError')
+} as Card;
+
 
 //
 // private functions

@@ -6,7 +6,9 @@
 const config =require("../dist/config").default;
 const customer = require("../dist/customer");
 const payments = require("../dist/payments").Payment;
+const crypto_fingerprint = require("../dist/payments").crypto_fingerprint;
 const xor = require("../dist/payments").xor;
+const dateFromExpiry = require("../dist/payments").dateFromExpiry;
 const $stripe = require("../dist/payments").$stripe;
 const should = require('should');
 
@@ -102,6 +104,8 @@ describe("Class customer", function(){
     cust.phone.should.equal('022345');
     cust.name.familyName.should.equal("Foo");
     cust.name.givenName.should.equal("Bar");
+    should.exist(cust.cashbalance);
+    should.not.exist(cust.cashbalance.available);
   });
 
   it("Get customer with id", async function() {
@@ -206,9 +210,60 @@ describe("Class customer", function(){
     pm_update.card.exp_year = 2026;
     const payment = await cust.addMethod('pm_card_fr');
     payment.country.should.equal('FR')
+  });
+
+  it("Add cashbalance payments method ", async function() {
+    const cust = await customer.Customer.get(custCleanList[0]);
+    const cashbalance = await cust.createCashBalance(6,2026,100);
+    cashbalance.issuer.should.equal('invoice');
+    cashbalance.funding.should.equal('credit');
+    cashbalance.limit.should.equal(100);
+    dateFromExpiry(cashbalance.expiry).getMonth().should.equal(5);
 
   });
 
+  it("Update cashbalance payments method ", async function() {
+    const cust = await customer.Customer.get(custCleanList[0]);
+    const cashbalance = await cust.createCashBalance(7,2026,0);
+    cashbalance.issuer.should.equal('invoice');
+    cashbalance.funding.should.equal('debit');
+    cashbalance.limit.should.equal(0);
+    dateFromExpiry(cashbalance.expiry).getMonth().should.equal(6);
+
+  });
+
+  it("Get cashbalance payments method ", async function() {
+    const cust = await customer.Customer.get(custCleanList[0]);
+    const alias = (crypto_fingerprint(cust.id+cust.uid+'invoice'));
+    const cashbalance = cust.findMethodByAlias(alias);
+    cashbalance.issuer.should.equal('invoice');
+    cashbalance.funding.should.equal('debit');
+    cashbalance.limit.should.equal(0);
+
+  });
+
+  it("List cash balance bank transfer ", async function() {
+    const cust = await customer.Customer.get(custCleanList[0]);
+    const tx = await cust.listBankTransfer();
+    console.log('--- DBG tx',tx)
+  });
+
+  
+
+  //
+  // 3d secure is always managed from fontend
+  xit("Add payments methods throw authenticationRequired", async function() {
+    config.option('debug',true);
+    const cust = await customer.Customer.get(custCleanList[0]);
+    try{
+      const payment = await cust.addMethod('pm_card_authenticationRequired');
+      should.not.exist(payment);
+    }catch(err) {
+      console.log('----',err.message)    
+      should.exist(err);
+
+    }
+  });  
 
   it("Add payments methods throw ExpiredCard", async function() {
     //config.option('debug',true);
@@ -252,44 +307,29 @@ describe("Class customer", function(){
       should.exist(err);
     }
   });
-  
-  //
-  // 3d secure is always managed from fontend
-  xit("Add payments methods throw authenticationRequired", async function() {
-    config.option('debug',true);
-    const cust = await customer.Customer.get(custCleanList[0]);
-    try{
-      const payment = await cust.addMethod('pm_card_authenticationRequired');
-      should.not.exist(payment);
-    }catch(err) {
-      console.log('----',err.message)    
-      should.exist(err);
-
-    }
-  });
 
 
   it("List all payment's method return latest method", async function() {
+    const now = new Date();
     const cust = await customer.Customer.get(custCleanList[0]);    
-    cust.methods.length.should.equal(2);
-    cust.methods[0].expiry.should.equal('4/2024')
+    cust.methods.length.should.equal(3);
+    cust.methods[0].expiry.should.equal((now.getMonth()+1)+'/2024')
   });
 
-  xit("Remove a payment's method", function(done) {
-    customer.Customer.create("test@email.com","Bar","Foo").then(function (cust) {
-      custCleanList.push(cust.id);
-      var promises = [];
-      var promises2 = [];
-      promises.push(cust.addMethod(sourceData,"tok_visa").catch(done));
-      promises.push(cust.addMethod(sourceData,"tok_mastercard").catch(done));
-      promises.push(cust.addMethod(sourceData,"tok_mastercard").catch(done));
+  it("Remove cahsbalance payment's method", async function() {
+    const cust = await customer.Customer.get(custCleanList[0]);    
+    const alias = (crypto_fingerprint(cust.id+cust.uid+'invoice'));
+    const card = cust.findMethodByAlias(alias);
+    await cust.removeMethod(card);
+    should.not.exist(cust.findMethodByAlias(alias));
+  });
 
-      Promise.all(promises)
-        .then(() => cust.getMethodList())
-        .then((p1) => cust.removeMethod(p1[0].id))
-        .then(() => cust.getMethodList())
-        .then((p2) => {p2.length.should.equal(2); done();});
-    }).catch(done);
+  it("Remove visa payment's method", async function() {
+    const cust = await customer.Customer.get(custCleanList[0]);    
+    const card = cust.methods[0];
+
+    await cust.removeMethod(card);
+    should.not.exist(cust.findMethodByAlias(card.alias));
   });
 
 

@@ -72,6 +72,8 @@ export default class Config {
       switch (option) {
         case 'stripeApiVersion':
         case 'stripePrivatekey':
+        case 'grantSecret':
+        case 'webhookSecret':
         case 'karibouApikey':
         case 'apikey':
         case 'currency':
@@ -109,19 +111,34 @@ const env = (process.env.NODE_ENV || 'test')
 , rootPath = path.normalize(__dirname + '/..')  
 , test=(env==='test')?'-test':'';
 
-//
-// dynamic position      
-let cfg;
 
-// try load environment specific config
-if(fs.existsSync(__dirname+'/config-'+ env+'.js')){
-  cfg = '../config-'+ env;  
-}else if(env==='production'){
-  cfg = '../config-production';
-}else{      
-  cfg = '../config-' + env;
+const loadConfig = (direnames) => {
+  //
+  // dynamic position      
+  for (let from of direnames) {
+    let cfg = from+'/config-'+ env+'.js';
+
+    console.log('----- ',cfg)
+    // try load environment specific config
+    if(fs.existsSync(cfg)){
+      return cfg;    
+    }
+    cfg = from+'/config-developpement.js';
+    if(fs.existsSync(cfg)){
+      return cfg;    
+    }
+    
+    cfg = from+'/config-production.js';
+    if(fs.existsSync(cfg)){
+      return cfg;    
+    }  
+  }
+
 }
-
+let cfg = loadConfig([__dirname,__dirname+'/..',__dirname+'/.']);
+if(!cfg) {
+  throw "Config file is mandatory!"
+}
 
 //
 // make the configuration visible  
