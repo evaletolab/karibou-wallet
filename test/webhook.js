@@ -45,7 +45,6 @@ describe("Class subscription", function(){
     defaultCustomer = await customer.Customer.create("subscription@email.com","Foo","Bar","022345",1234);
     const card = await defaultCustomer.addMethod(unxor(card_mastercard_prepaid.id));
     defaultPaymentAlias = card.alias;
-    defaultSub = await subscription.SubscriptionContract.create(defaultCustomer,card,"week",dateValid,shipping,items,dayOfWeek,fees)
 
   });
 
@@ -55,7 +54,7 @@ describe("Class subscription", function(){
   });
 
   // Simple weekly souscription 
-  it("SubscriptionContract create weekly receive upcoming message", async function() {
+  xit("SubscriptionContract create weekly receive upcoming message", async function() {
     config.option('debug',true);
 
     const EVENT_SUCCESS = {

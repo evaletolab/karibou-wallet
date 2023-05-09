@@ -368,6 +368,19 @@ export class Customer {
         throw new Error("Source ID not found:"+method.id);
       }
 
+      const card_id = unxor(method.id);
+
+      const subs = await $stripe.subscriptions.list({
+        customer:this.id
+      });      
+
+      //
+      // verify if payment is used 
+      const payment_used = subs.data.some(sub => sub.default_payment_method = card_id)
+      if(payment_used) {
+        throw new Error("Impossible de supprimer une méthode paiement utilisée par une souscription");
+      }
+
       //
       // remove vash balance payment method
       if(this._sources[index].issuer=='invoice'){
@@ -381,8 +394,6 @@ export class Customer {
         return;
       }
   
-      const card_id = unxor(method.id);
-
       //
       // check the stripe used version
       const isNewImp = (card_id[0] === 'p' && card_id[1] === 'm' && card_id[2] === '_');
@@ -408,6 +419,10 @@ export class Customer {
     }
 
   }
+
+  findMethodByID(id) {
+    return this._sources.find(card => card.id == id);
+  }  
 
 
   findMethodByAlias(alias) {

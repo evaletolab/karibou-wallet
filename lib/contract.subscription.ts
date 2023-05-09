@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
 import { Customer } from './customer';
-import { $stripe, Address, Card, unxor } from './payments';
+import { $stripe, Address, Card, unxor, xor } from './payments';
 import Config from './config';
 
 export type Interval = Stripe.Plan.Interval;
@@ -99,6 +99,9 @@ export class SubscriptionContract {
     return parseShipping(this._subscription.metadata);
   }
 
+  get paymentMethodID() {
+    return xor(this._subscription.default_payment_method as string);
+  }
   //
   // configure the billing cycle anchor to fixed dates (for example, the 1st of the next month).
   // For example, a customer with a monthly subscription set to cycle on the 2nd of the 
@@ -132,6 +135,9 @@ export class SubscriptionContract {
   //   );
   // }
 
+  async customer(){
+    return Customer.get(this._subscription.customer);
+  }
 
   //
   // Cancel (delete) subscription at end of (paid) cycle
@@ -191,6 +197,16 @@ export class SubscriptionContract {
     );
 
 
+  }
+
+
+  //
+  // Update current contract with the new customer payment method 
+  async updatePaymentMethod(card:Card) {
+    this._subscription = await $stripe.subscriptions.update(this.id, {
+      default_payment_method: unxor(card.id)
+    });    
+    return this;
   }
 
   //

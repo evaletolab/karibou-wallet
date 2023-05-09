@@ -3,13 +3,18 @@ import Stripe from 'stripe';
 import { Payment, $stripe, xor, unxor, Address, stripeParseError, Card, CashBalance, crypto_sha256, crypto_randomToken, crypto_fingerprint } from './payments';
 import Config from './config';
 import { Transaction } from './transaction';
-import { SubscriptionContract } from './subscription.contract';
+import { SubscriptionContract } from './contract.subscription';
 
-export interface WebhookContent {
+export interface WebhookStripe {
   event:string;
   error:boolean;
   subscription?: SubscriptionContract;
   transaction?: Transaction;
+}
+
+export interface WebhookTwilio {
+  event:string;
+  error:boolean;
 }
 
 export default class Webhook {
@@ -17,12 +22,12 @@ export default class Webhook {
 
 
   /**
-  * ## retrieve Webhook.parse(body)
-  * Get transaction stripe object from webhook data
+  * ## retrieve Webhook.stripe(body)
+  * Get stripe objects from webhook data
   * https://stripe.com/docs/webhooks
-  * @returns {Transaction or Subscription } 
+  * @returns {WebhookStripe } 
   */
-   static async parse(body, sig):Promise<WebhookContent> {
+   static async stripe(body, sig):Promise<WebhookStripe> {
 
     // 
     // body = request.data
@@ -43,7 +48,8 @@ export default class Webhook {
         // verify if payment method muste be updated
 
         const contract = await SubscriptionContract.get(invoice.subscription);
-        return { event: event.type,contract,error:false} as WebhookContent;
+        
+        return { event: event.type,contract,error:false} as WebhookStripe;
       }
 
       // 
@@ -52,7 +58,7 @@ export default class Webhook {
         const invoice = event.data.object as Stripe.Invoice;
         const transaction = await Transaction.get(invoice.payment_intent);
         const contract = await SubscriptionContract.get(invoice.subscription);
-        return { event: event.type ,contract, transaction,error:true} as WebhookContent;
+        return { event: event.type ,contract, transaction,error:true} as WebhookStripe;
       }
 
 
@@ -61,7 +67,7 @@ export default class Webhook {
       if(event.type == 'invoice.payment_succeeded') {
         const invoice = event.data.object as Stripe.Invoice;
         const contract = await SubscriptionContract.get(invoice.subscription);
-        return { event: event.type ,contract,error:false} as WebhookContent;
+        return { event: event.type ,contract,error:false} as WebhookStripe;
       }
 
       //
@@ -77,7 +83,7 @@ export default class Webhook {
         });        
         const transaction = await Transaction.get(payment.id);
 
-        return { event: event.type ,transaction,error:false} as WebhookContent;
+        return { event: event.type ,transaction,error:false} as WebhookStripe;
       }
       
       //
@@ -91,5 +97,10 @@ export default class Webhook {
     }    
   }
 
+
+  static async twilio(body, sig):Promise<WebhookTwilio>{
+    return {} as WebhookTwilio;
+  }
       
+
 }

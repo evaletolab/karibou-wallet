@@ -69,7 +69,6 @@ describe("Class subscription", function(){
 
   // Simple weekly souscription 
   it("SubscriptionContract create weekly", async function() {
-    config.option('debug',true);
 
     const fees = 0.06;
     const dayOfWeek= 2; // tuesday
@@ -94,7 +93,6 @@ describe("Class subscription", function(){
 
   // Simple weekly souscription 
   it("SubscriptionContract create montly", async function() {
-    config.option('debug',true);
 
     const fees = 0.06;
     const dayOfWeek= 2; // tuesday
@@ -116,8 +114,7 @@ describe("Class subscription", function(){
     // console.log('---- DBG sub',defaultSub.items[0]);
   });
 
-  it("SubscriptionContract get from webhook", async function() {
-    config.option('debug',true);
+  it("SubscriptionContract get default payment method and customer from id", async function() {
 
     defaultSub = await subscription.SubscriptionContract.get(defaultSub.id)
 
@@ -127,6 +124,38 @@ describe("Class subscription", function(){
     defaultSub.should.property("items");
     defaultSub.items.length.should.equal(1);
 
+    //
+    // verify customer 
+    const customer = await defaultSub.customer();
+    customer.id.should.equal(defaultCustomer.id);
+
+    //
+    // verify payment
+    const pid = defaultSub.paymentMethodID;
+    const card = customer.findMethodByID(pid);
+    should.exist(card);
+
+  });
+
+  it("SubscriptionContract try to remove payment method used from sub", async function() {
+    try{
+      config.option('debug',false);
+
+      const customer = await defaultSub.customer();
+  
+      //
+      // verify payment
+      const pid = defaultSub.paymentMethodID;
+      const card = customer.findMethodByID(pid);
+      should.exist(card);
+      await customer.removeMethod(card);
+      should.not.exist(true);
+  
+    }catch(err) {
+      should.exist(err);
+      err.message.should.containEql('Impossible de supprimer');
+
+    }
   });
 
   it("list all SubscriptionContract for one customer", async function() {
@@ -178,7 +207,7 @@ describe("Class subscription", function(){
   // invoice.upcoming
 
   // Simple weekly souscription 
-  it("Webhook.parse invoice.upcoming", async function() {
+  it("Webhook.stripe invoice.upcoming", async function() {
     config.option('debug',true);
     const EVENT_upcoming = {
       type: 'invoice.upcoming',
@@ -187,7 +216,7 @@ describe("Class subscription", function(){
       }}      
     };
     try{
-      const content = await Webhook.parse(EVENT_upcoming,'hello');
+      const content = await Webhook.stripe(EVENT_upcoming,'hello');
       content.contract.id.should.equal(defaultSub.id);
       content.error.should.equal(false);      
     }catch(err) {
@@ -196,7 +225,7 @@ describe("Class subscription", function(){
   });
 	
 
-  it("Webhook.parse invoice.payment_failed", async function() {
+  it("Webhook.stripe invoice.payment_failed", async function() {
     config.option('debug',true);
     const EVENT_payment_failed = {
       type: 'invoice.payment_failed',
@@ -206,7 +235,7 @@ describe("Class subscription", function(){
       }}      
     };
     try{
-      const content = await Webhook.parse(EVENT_payment_failed,'hello');
+      const content = await Webhook.stripe(EVENT_payment_failed,'hello');
       content.contract.id.should.equal(defaultSub.id);
       content.transaction.id.should.equal(defaultTx.id);
       content.error.should.equal(true);      
@@ -216,7 +245,7 @@ describe("Class subscription", function(){
   });
 	
 
-  it("Webhook.parse invoice.payment_succeeded", async function() {
+  it("Webhook.stripe invoice.payment_succeeded", async function() {
     config.option('debug',true);
     const EVENT_payment_succeeded = {
       type: 'invoice.payment_succeeded',
@@ -225,7 +254,7 @@ describe("Class subscription", function(){
       }}      
     };
     try{
-      const content = await Webhook.parse(EVENT_payment_succeeded,'hello');
+      const content = await Webhook.stripe(EVENT_payment_succeeded,'hello');
       content.contract.id.should.equal(defaultSub.id);
       content.error.should.equal(false);      
     }catch(err) {

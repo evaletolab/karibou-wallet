@@ -7,7 +7,6 @@
  const customer = require("../dist/customer");
  const payments = require("../dist/payments").Payment;
  const transaction = require("../dist/transaction");
- const xor = require("../dist/payments").xor;
  const $stripe = require("../dist/payments").$stripe;
  const should = require('should');
  const axios = require('axios');
@@ -49,7 +48,7 @@ describe("Class transaction with cashbalance", function(){
 
     //
     // create uniq cashbalance for this user
-    const card = await defaultCustomer.createCashBalance(5,now.getFullYear()+4,100);
+    const card = await defaultCustomer.createCashBalance(5,now.getFullYear()+4,0);
     should.exist(card);
     should.exist(defaultCustomer.cashbalance.available)
     should.exist(defaultCustomer.cashbalance.available.eur)
@@ -86,20 +85,6 @@ describe("Class transaction with cashbalance", function(){
   });
 
 
-
-  xit("Add a note de crédit amount", async function() {
-
-    const transfer = await $stripe.customers.createBalanceTransaction(
-      defaultCustomer.id,
-      {amount: 10000, currency: 'eur'}
-    );    
-
-    
-    defaultCustomer = await customer.Customer.get(defaultCustomer.id);
-    console.log('----',defaultCustomer.cashbalance);
-    console.log('----',transfer);
-  });
-
   it("Transaction create with insufisant fund throw an error", async function() {
     try{
       const card = defaultCustomer.findMethodByAlias(defaultPaymentAlias);
@@ -110,6 +95,36 @@ describe("Class transaction with cashbalance", function(){
       should.exist(err);
     }
   });  
+
+
+
+  it("update customer cash balance to accept a max credit 100 fr", async function() {
+    const now = new Date();
+    const card = await defaultCustomer.createCashBalance(5,now.getFullYear()+4,100);
+    should.exist(card);
+    card.limit.should.equal(100);
+    
+    defaultCustomer = await customer.Customer.get(defaultCustomer.id);
+    //console.log('----',defaultCustomer.cashbalance);
+    
+  });
+
+
+
+  //
+  // https://stripe.com/docs/payments/bank-transfers/accept-a-payment?platform=api&invoices=without#web-create-and-confirm-payment-intent
+  it("Transaction with creditcreate with insufisant fund throw an error", async function() {
+    try{
+      const card = defaultCustomer.findMethodByAlias(defaultPaymentAlias);
+      const tx = await transaction.Transaction.authorize(defaultCustomer,card,101,paymentOpts)
+      should.not.exist(tx);
+    }catch(err) {
+      console.log(err.message)
+      should.exist(err);
+    }
+  });  
+
+
 
   // START TESTING
   it("Transaction create valid cashbalance authorization", async function() {
@@ -176,9 +191,25 @@ describe("Class transaction with cashbalance", function(){
   it("List cash balance bank transfer ", async function() {
     const cust = await customer.Customer.get(defaultCustomer.id);
     const tx = await cust.listBankTransfer();
-    console.log('--- DBG tx',tx)
+    // console.log('--- DBG tx',tx)
+    should.exist(tx);
+    should.exist(tx.length);    
   });
 
+
+  it("Create new Transaction to empty the cashbalance account  ", async function() {
+
+    // load card from default customer
+    const card = defaultCustomer.findMethodByAlias(defaultPaymentAlias);
+    const tx = await transaction.Transaction.authorize(defaultCustomer,card,98,paymentOpts)
+    should.exist(tx);
+
+    defaultCustomer = await customer.Customer.get(defaultCustomer.id);
+    console.log('--- DBG cash',defaultCustomer.cashbalance);
+    defaultCustomer.cashbalance.available.eur.should.equal(0);
+
+
+  });
     
 
 });
