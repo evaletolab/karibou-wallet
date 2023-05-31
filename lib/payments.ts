@@ -2,20 +2,88 @@ import Config from './config';
 import Stripe from 'stripe';
 import { createHash, randomBytes } from 'crypto';
 
-export enum Payment {
+
+
+export enum KngPayment {
   card = 1,
   sepa,
   balance,
+  credit,
   bitcoin  
 }
 
 
-export interface Source {
-  type:Payment;
+
+
+export type KngPaymentStatus = "pending"
+													| "authorized"
+													| "partially_paid"
+													| "invoice"
+													| "invoice_paid"
+													| "paid"
+													| "partially_refunded"
+													| "refunded"
+													| "voided";
+
+export type KngPaymentExendedStatus = "refund" | "prepaid" | "invoice";
+
+//
+// when importing a transaction, the context can be on Stripe or on Karibou database
+export interface KngOrderPayment {	
+	transaction: string;	
+	alias: string;
+	issuer: string;
+	status: KngPaymentStatus;
+	handle?: string;
+	provider: string;
+	hub_refund: number;
+	logs: [string];
+	fees:{
+		charge:number;
+		shipping:number;
+	}
+	number?: string;
+	expiry?: string;	
+}
+
+export interface KngPaymentInvoice {
+  id: string;
+  metadata:{
+    order:string;
+		customer_credit?:string;
+		exended_status?:KngPaymentExendedStatus;
+		refund:string;
+  }
+  status: string;
+  client_secret: string;
+  payment_method:"invoice";
+  customer: string;
+  amount_received?:number;
+  amount:number;
+  transfer_group?:string;
+  currency:string;
+  description:string;
+}
+
+export interface KngPaymentAddress {
+  id:string;
+  name:string;
+  note:string;
+  floor:string;
+  streetAddress:string;
+  region:string;
+  postalCode:string;  
+  lat:number;
+  lng:number;
+}
+
+
+export interface KngPaymentSource {
+  type:KngPayment;
   id:string;
 }
 
-export interface Card extends Source {
+export interface KngCard extends KngPaymentSource {
   alias:string;
   country:string;
   last4:string;
@@ -27,7 +95,15 @@ export interface Card extends Source {
 }
 
 
-export interface CashBalance extends Source {
+export interface CashBalance extends KngPaymentSource {
+  alias:string;
+  issuer:"cash";
+  funding:string;
+  expiry:string;
+	limit:number;
+}
+
+export interface CreditBalance extends KngPaymentSource {
   alias:string;
   issuer:"invoice";
   funding:string;
@@ -36,22 +112,12 @@ export interface CashBalance extends Source {
 }
 
 
+
 export const $stripe = new Stripe(Config.option('stripePrivatekey'), {
   apiVersion: Config.option('stripeApiVersion'),
   maxNetworkRetries: 2
 });
 
-export interface Address {
-  id:string;
-  name:string;
-  note:string;
-  floor:string;
-  streetAddress:string;
-  region:string;
-  postalCode:string;  
-  lat:number;
-  lng:number;
-}
 
 // Helper to parse Year
 export const parseYear = function(year) {
@@ -293,30 +359,34 @@ export function stripeParseError(err) {
 // export instances variables
 
 export const card_mastercard_prepaid = {
-	type:Payment.card,
+	type:KngPayment.card,
 	id: xor('pm_card_mastercard_prepaid')
-} as Card;
+} as KngCard;
 
 export const card_authenticationRequired = {
-	type:Payment.card,
+	type:KngPayment.card,
 	id: xor('pm_card_authenticationRequired')
-} as Card;
+} as KngCard;
 
 export const card_visa_chargeDeclined = {
-	type:Payment.card,
+	type:KngPayment.card,
 	id: xor('pm_card_visa_chargeDeclined')
-} as Card;
+} as KngCard;
 
 export const card_visa_chargeDeclinedLostCard = {
-	type:Payment.card,
+	type:KngPayment.card,
 	id: xor('pm_card_visa_chargeDeclinedLostCard')
-} as Card;
+} as KngCard;
 
-export const pm_card_chargeDeclinedProcessingError = {
-	type:Payment.card,
+export const card_chargeDeclinedProcessingError = {
+	type:KngPayment.card,
 	id: xor('pm_card_chargeDeclinedProcessingError')
-} as Card;
+} as KngCard;
 
+export const default_card_invoice = {
+	type:KngPayment.credit,
+	id: xor('pm_card_invoice')
+} as KngCard;
 
 //
 // private functions

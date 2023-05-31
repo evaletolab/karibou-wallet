@@ -6,6 +6,9 @@
  */
 
  const config =require("../dist/config").default;
+ const options = require('../config-test');
+ config.configure(options.payment);
+
  const payments = require("../dist/payments");
  const should = require('should');
  

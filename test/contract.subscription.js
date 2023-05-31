@@ -4,12 +4,16 @@
  */
 
  const config =require("../dist/config").default;
+ const options = require('../config-test');
+ config.configure(options.payment);
+
+
  const customer = require("../dist/customer");
  const transaction = require("../dist/transaction");
- const payments = require("../dist/payments").Payment;
+ const payments = require("../dist/payments").KngPayment;
  const unxor = require("../dist/payments").unxor;
  const card_mastercard_prepaid = require("../dist/payments").card_mastercard_prepaid;
- const subscription = require("../dist/subscription.contract");
+ const subscription = require("../dist/contract.subscription");
  const $stripe = require("../dist/payments").$stripe;
  const should = require('should');
  const cartItems = require('./fixtures/cart.items');

@@ -7,7 +7,8 @@
  const assert = require('assert');
  const should = require('should');
  const config = require('../dist/config').default;
- const $config = require('../dist/config').$config;
+ const options = require('../config-test');
+ config.configure(options.payment);
 
 
 describe("config", function(){

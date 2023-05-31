@@ -4,8 +4,11 @@
  */
 
  const config =require("../dist/config").default;
+ const options = require('../config-test');
+ config.configure(options.payment);
+
  const customer = require("../dist/customer");
- const payments = require("../dist/payments").Payment;
+ const payments = require("../dist/payments").KngPayment;
  const transaction = require("../dist/transaction");
  const $stripe = require("../dist/payments").$stripe;
  const should = require('should');
@@ -91,7 +94,7 @@ describe("Class transaction with cashbalance", function(){
       const tx = await transaction.Transaction.authorize(defaultCustomer,card,101,paymentOpts)
       should.not.exist(tx);
     }catch(err) {
-      console.log(err.message)
+      err.message.should.containEql('balance is insufficient to complete the payment')
       should.exist(err);
     }
   });  
@@ -119,7 +122,7 @@ describe("Class transaction with cashbalance", function(){
       const tx = await transaction.Transaction.authorize(defaultCustomer,card,101,paymentOpts)
       should.not.exist(tx);
     }catch(err) {
-      console.log(err.message)
+      err.message.should.containEql('balance is insufficient to complete the payment')
       should.exist(err);
     }
   });  
@@ -138,7 +141,7 @@ describe("Class transaction with cashbalance", function(){
     tx.amount.should.equal(2);
     tx.status.should.equal('prepaid');
     tx.requiresAction.should.equal(false);
-    tx.captured.should.equal(true);
+    tx.captured.should.equal(false);
     tx.canceled.should.equal(false);
     tx.refunded.should.equal(0);
     should.exist(tx._payment.shipping);
@@ -205,7 +208,7 @@ describe("Class transaction with cashbalance", function(){
     should.exist(tx);
 
     defaultCustomer = await customer.Customer.get(defaultCustomer.id);
-    console.log('--- DBG cash',defaultCustomer.cashbalance);
+    // console.log('--- DBG cash',defaultCustomer.cashbalance);
     defaultCustomer.cashbalance.available.eur.should.equal(0);
 
 

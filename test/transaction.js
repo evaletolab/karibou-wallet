@@ -4,8 +4,10 @@
  */
 
  const config =require("../dist/config").default;
+ const options = require('../config-test');
+ config.configure(options.payment);
+
  const customer = require("../dist/customer");
- const payments = require("../dist/payments").Payment;
  const unxor = require("../dist/payments").unxor;
  const card_mastercard_prepaid = require("../dist/payments").card_mastercard_prepaid;
  const card_authenticationRequired = require("../dist/payments").card_authenticationRequired;

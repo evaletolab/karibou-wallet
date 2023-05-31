@@ -8,7 +8,7 @@
  const payments = require("../dist/payments").Payment;
  const unxor = require("../dist/payments").unxor;
  const card_mastercard_prepaid = require("../dist/payments").card_mastercard_prepaid;
- const subscription = require("../dist/subscription.contract");
+ const subscription = require("../dist/contract.subscription");
  const $stripe = require("../dist/payments").$stripe;
  const should = require('should');
  const cartItems = require('./fixtures/cart.items');

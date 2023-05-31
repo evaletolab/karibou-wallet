@@ -5,7 +5,7 @@
 
  const config =require("../dist/config").default;
  const customer = require("../dist/customer");
- const payments = require("../dist/payments").Payment;
+ const payments = require("../dist/payments").KngPayment;
  const transaction = require("../dist/transaction");
  const $stripe = require("../dist/payments").$stripe;
  const should = require('should');

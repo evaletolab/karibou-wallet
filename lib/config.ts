@@ -3,28 +3,15 @@
 * Copyright (c)2014, by Olivier Evalet <evaleto@gmail.com>
 * Licensed under GPL license (see LICENSE)
 */
-const fs = require('fs');
+import { existsSync } from 'fs';
+import { dirname } from 'path';
 
 
 export default class Config {
-  private stripeApiVersion:string;
-  private stripePrivatekey:string;
-  private debug:boolean=false;
-  private allowMaxAmount:number;
-  private sandbox:boolean;
-  private apikey:string;
-  private secret:string;
-  private currency:string;
-  private allowedCurrencies:string[];
-  private allowMultipleSetOption:boolean;
 
   private static settings: any;
 
   private constructor(opts) {
-    this.allowMaxAmount=1000.00; // block charge (payment) above
-    this.sandbox = false;
-    this.debug = false; // Enables *blocking* debug output to STDOUT    
-    this.allowMultipleSetOption = false;
 
     Object.keys(opts).forEach(function(key) {
       Config.option(key, opts[key]);
@@ -76,11 +63,13 @@ export default class Config {
         case 'webhookSecret':
         case 'karibouApikey':
         case 'apikey':
+        case 'provider':
         case 'currency':
         case 'secret':
         case 'shaSecret':
           Config.settings[option] = value;break;
         case 'allowMaxAmount':
+        case 'allowMaxCredit':
         case 'reservedAmount':
             Config.settings[option] = parseFloat(value);break;
         case 'sandbox':
@@ -105,44 +94,4 @@ export default class Config {
   };
 
 }
-
-const env = (process.env.NODE_ENV || 'test')
-, path = require('path')
-, rootPath = path.normalize(__dirname + '/..')  
-, test=(env==='test')?'-test':'';
-
-
-const loadConfig = (direnames) => {
-  //
-  // dynamic position      
-  for (let from of direnames) {
-    let cfg = from+'/config-'+ env+'.js';
-
-    console.log('----- ',cfg)
-    // try load environment specific config
-    if(fs.existsSync(cfg)){
-      return cfg;    
-    }
-    cfg = from+'/config-developpement.js';
-    if(fs.existsSync(cfg)){
-      return cfg;    
-    }
-    
-    cfg = from+'/config-production.js';
-    if(fs.existsSync(cfg)){
-      return cfg;    
-    }  
-  }
-
-}
-let cfg = loadConfig([__dirname,__dirname+'/..',__dirname+'/.']);
-if(!cfg) {
-  throw "Config file is mandatory!"
-}
-
-//
-// make the configuration visible  
-const config = require(cfg);
-console.log(' load configuration for payment module using: ',cfg);
-export const $config = Config.configure(config.wallet||config.payment);
 

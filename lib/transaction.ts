@@ -9,10 +9,11 @@ import { strict as assert } from 'assert';
 import Stripe from 'stripe';
 import Config from './config';
 import { Customer } from './customer';
-import { Card, $stripe, stripeParseError, unxor, xor, Payment } from './payments';
+import { KngCard, $stripe, stripeParseError, unxor, xor, KngPayment, KngPaymentInvoice, KngPaymentStatus, KngOrderPayment } from './payments';
 
 
 export interface PaymentOptions {
+  charge?:boolean;
   oid:string;
   txgroup:string;
   email:string;
@@ -23,16 +24,18 @@ export interface PaymentOptions {
   }
 }
 
+
 export  class  Transaction {
-  private _payment:Stripe.PaymentIntent;
+  private _payment:Stripe.PaymentIntent|KngPaymentInvoice;
   private _refund:Stripe.Refund;
   private _report:any;
+
 
   /**
    * ## transaction()
    * @constructor
    */
-  private constructor(payment:Stripe.PaymentIntent, refund?:Stripe.Refund) {    
+  private constructor(payment:Stripe.PaymentIntent|KngPaymentInvoice, refund?:Stripe.Refund) {    
     this._payment = payment;
     this._refund = refund || {} as Stripe.Refund;
     this._report = {};
@@ -50,8 +53,32 @@ export  class  Transaction {
   // cash balance create a direct charge (automatic paiement)
   // subscription create a direct charge (automatic paiement)
   // WARNING to keep track of our needs of "manual" the status paid will be => auth_paid
-  get status():string{
-    return (this._payment.metadata.exended_status || this._payment.status);
+  get status():KngPaymentStatus{
+    //
+    //
+    // PaymentIntentStatus
+    // https://stripe.com/docs/payments/intents#intent-statuses
+    //   "canceled" "processing" "requires_action" "requires_capture" "requires_confirmation" 
+    //   "requires_payment_method"| "succeeded";
+
+    // KngPaymentExendedStatus 
+    //  "refund"|"prepaid"|"invoice"|"invoice_paid"|"pending"|"voided";
+
+    // Karibou KngPaymentStatus
+    //   "pending","authorized","partially_paid","paid","partially_refunded","refunded"
+    //   "invoice","invoice_paid","voided"
+
+    const status = {
+      "processing":"pending",
+      "requires_action":"requires_action",
+      "requires_capture":"authorized",
+      "succeeded":"paid",
+      "canceled":"canceled",
+      "refund":"refund",
+      "invoice":"invoice",
+      "invoice_paid":"invoice_paid"      
+    }
+    return (this._payment.metadata.exended_status || this._payment.status) as KngPaymentStatus;
   }
 
   get client_secret():string{
@@ -85,17 +112,25 @@ export  class  Transaction {
     return this._payment.description;
   }
 
+  get provider(): string {
+    switch(this._payment.payment_method){
+      case "invoice":
+      return "invoice";
+    }
+    return "stripe";
+  }
+
   get requiresAction():boolean {
-    return this.status == "requires_action";
+    return this.status == "requires_action" as KngPaymentStatus;
   }
   get authorized():boolean{
-    return ["requires_capture","prepaid"].includes(this.status);
+    return ["requires_capture","authorized","prepaid","invoice","invoice_paid"].includes(this.status);
   }
   get captured():boolean{
-    return ["succeeded","prepaid","refund"].includes(this.status);
+    return ["succeeded","paid","refund"].includes(this.status);
   }
   get canceled():boolean{
-    return this.status == "canceled";
+    return this.status == "canceled" as KngPaymentStatus;
   }
 
   get refunded():number{
@@ -103,10 +138,14 @@ export  class  Transaction {
     return parseFloat((_refunded/100).toFixed(2));
   }
 
+  get customerCredit() {
+    const credit = this._payment.metadata.customer_credit;
+    return (credit)? parseFloat(credit)/100:0;
+  }
+
   get report(){
-    let now = new Date(this._payment.created * 1000);
     let amount = this.amount;
-    let status;
+    let status = this._payment.status as string;
     switch(this._payment.status){
       case 'requires_action':
         status = 'requires_action'
@@ -121,17 +160,16 @@ export  class  Transaction {
         status = 'captured'
         break;
     }
-    if(this._refund.amount) {
+    if(this._refund && this._refund.amount) {
       amount = parseFloat((this._refund.amount/100).toFixed(2));
       status = 'refund';
-      now = new Date();
     }
 
-
+    const now = new Date();
     return {
       log: status + ' ' + (this.amount) + ' ' + this.currency + ' the '+ now.toDateString(),
       transaction:(this.id),
-      updated:Date.now(),
+      updated:now.getTime(),
       provider:'stripe'
     };
   }
@@ -143,7 +181,7 @@ export  class  Transaction {
   * @returns the transaction object
   */
 
-  static async authorize(customer:Customer,card:Card, amount:number, options:PaymentOptions) {
+  static async authorize(customer:Customer,card:KngCard, amount:number, options:PaymentOptions) {
 
     assert(options.oid)
     assert(options.shipping)
@@ -151,7 +189,13 @@ export  class  Transaction {
     assert(options.shipping.postalCode)
     assert(options.shipping.name)
 
-		const amount_capturable = Math.round(amount*100);
+
+    //
+    // available credit 
+    const usedCredit = Math.min(customer.balance,amount);
+
+    // assert amount_capturable > 100
+		const amount_capturable = Math.round((amount-usedCredit)*100);
 		const tx_description = "#"+options.oid+" for "+options.email;
     const tx_group = options.txgroup;
 		const shipping = {
@@ -188,25 +232,61 @@ export  class  Transaction {
       } as Stripe.PaymentIntentCreateParams;
 
       //
+      // use customer credit instead of KngCard
+      if(usedCredit == amount){
+        await customer.updateCredit(-usedCredit);
+        //
+        // as credit transaction
+        const transaction = createOrderPayment(customer.id,usedCredit*100,0,"authorized",options.oid);
+        transaction.amount_received = usedCredit;
+        return new Transaction(transaction);
+      }
+      //
+      // use customer negative credit instead of KngCard
+      // updateCredit manage the max negative credit
+      else if (customer.allowedCredit()) {
+        await customer.updateCredit(-amount);
+        // as invoice transaction
+        const transaction = createOrderPayment(customer.id,amount*100,0,"authorized",options.oid);
+        transaction.amount_received = usedCredit;
+        return new Transaction(transaction);
+      }
+
+      //
       // cash balance create a direct charge
       // manual paiement generate the status auth_paid
-      if (card.type == Payment.balance) {
+      else if (card.type == KngPayment.balance) {
         params.payment_method_types = ['customer_balance'];
         params.payment_method_data= {
           type: 'customer_balance',
         };
         params.currency = customer.cashbalance.currency;
         params.capture_method='automatic';
-        params.metadata.exended_status = 'prepaid';
+        // 
+        // option charge avoid the 2step payment simulation status  
+        params.metadata.exended_status = options.charge ? 'paid':'prepaid';
 
       }
-      else if (card.type == Payment.card) {
+      else if (card.type == KngPayment.card) {
         params.payment_method = unxor(card.id);
         params.payment_method_types = ['card'];
+      } else {
+        throw new Error("balance is insufficient to complete the payment");
       }
 
       const transaction = await $stripe.paymentIntents.create(params);
   
+      //
+      // update coupled credit with card
+      if(usedCredit>0) {
+        await customer.updateCredit(-usedCredit);
+        transaction.metadata.customer_credit = usedCredit*100+'';
+        await $stripe.paymentIntents.update( transaction.id , { 
+          metadata:transaction.metadata
+        });  
+
+      }
+
       return new Transaction(transaction);
   
     }catch(err) {
@@ -217,7 +297,7 @@ export  class  Transaction {
 
   /**
   * ## transaction.get(id)
-  * Get transaction stripe object from order api
+  * Get transaction object from order api
   * @returns {Transaction} 
   */
    static async get(id) {
@@ -225,6 +305,36 @@ export  class  Transaction {
     const transaction = await $stripe.paymentIntents.retrieve(tid);
     assert(transaction.customer)
     return new Transaction(transaction);
+  }
+
+  /**
+  * ## transaction.fromOrder(order)
+  * Get transaction object from stored karibou order 
+  * @returns {Transaction} 
+  */
+   static async fromOrder(order:KngOrderPayment) {
+    switch (order.issuer) {
+      case "stripe":
+      return await Transaction.get(order.transaction);
+      case "invoice":
+      //
+      // FIXME backport decodeAlias from the old api 
+      try{
+        const tx=unxor(order.transaction.split('kng_')[1]).split('::');
+        const oid = tx[0];
+        const amount = parseInt(tx[1]);
+        const customer_id = tx[2];
+        const transaction:KngPaymentInvoice = createOrderPayment(customer_id,amount,0,order.status,oid);
+
+       return new Transaction(transaction);
+  
+      }catch(err){
+        throw new Error("La référence de la carte n'est pas compatible avec le service de paiement");
+      }
+    
+      
+    } 
+    throw new Error("Issuer doesnt exist");
   }
 
 
@@ -257,6 +367,8 @@ export  class  Transaction {
       return Promise.reject(new Error("Transaction need to an minimal amount to proceed"));
     }
 
+    
+
     // Effectuer un recapture lorsque la tx en cours a été annulée:
     // - durée de vie de 7 jours maximum,
     // - le montant à disposition est insuffisant
@@ -271,13 +383,14 @@ export  class  Transaction {
       // sans authentification, la banque serait alors forcée de demander 
       // l'authentification sur le prochain paiement, même s'il est hors-session.
 
+      const payment = this._payment as Stripe.PaymentIntent;
       const shipping = {
         address: {
-          line1:this._payment.shipping.address.line1,
-          postal_code:this._payment.shipping.address.postal_code,
+          line1:payment.shipping.address.line1,
+          postal_code:payment.shipping.address.postal_code,
           country:'CH'
         },
-        name: this._payment.shipping.name
+        name: payment.shipping.name
       };
   
 
@@ -292,7 +405,7 @@ export  class  Transaction {
         capture_method:'automatic', 
         confirm:true,
         shipping: shipping,
-        description: this._payment.description,
+        description: payment.description,
         metadata: {
           order: this.oid
         }
@@ -304,10 +417,9 @@ export  class  Transaction {
 		const normAmount = Math.round(amount*100);
 
     try{
-
       //
       // case of cash balance
-      if(this.status == "prepaid") {
+      if(this.status == "prepaid" as KngPaymentStatus) {
 
         if(normAmount == this._payment.amount) {
           this._payment.metadata.exended_status = null;
@@ -325,7 +437,7 @@ export  class  Transaction {
 
       } 
       //
-      // case of Card
+      // case of KngCard
       else {
         //
         // if amount is 0 (including shipping), cancel and mark it as paid
@@ -344,13 +456,14 @@ export  class  Transaction {
       return this;
     }catch(err) {
 
+      const payment = this._payment as Stripe.PaymentIntent;
 			const msg = err.message || err;
 			//
 			// cancel PaymentIntent can generate an error, avoid it (for now!)
 			if(msg.indexOf('Only a PaymentIntent with one of the following statuses may be canceled')>-1){
 				const result={
-					log:'cancel '+this.oid+' , from '+new Date(this._payment.created),
-					transaction:xor(this._payment.id),
+					log:'cancel '+this.oid+' , from '+new Date(payment.created),
+					transaction:xor(payment.id),
 					updated:Date.now(),
 					provider:'stripe'
 				};
@@ -405,7 +518,10 @@ export  class  Transaction {
       return Promise.reject(new Error("Transaction canceled."));
     }
 
-    if (!this.captured){
+    //
+    // prepaid transaction is a simulation for 2 step payment
+    // Therefore the case of the partial capture implies a refund
+    if (!this.captured && this.status!="prepaid" as KngPaymentStatus){
       return Promise.reject(new Error("Transaction cannot be refunded before capture, try to cancel."));
     }
 
@@ -447,6 +563,24 @@ export  class  Transaction {
     }  
   }
 
+}
+
+function createOrderPayment(customer_id,amount,refund,status,oid) {
+  //
+  // transaction id string format: order_id::amount::customer_id
+  const transaction:KngPaymentInvoice = {
+    amount:amount,
+    client_secret:xor(oid),
+    currency:'CHF',
+    customer:customer_id,
+    description:"#"+oid,
+    metadata: {order:oid,refund:refund},
+    id:'kng_'+xor(oid+'::'+(amount|0)+'::'+customer_id),
+    payment_method:'invoice',
+    status:status,
+    transfer_group:"#"+oid
+ }
+ return transaction;
 }
 
 function parseError(err) {

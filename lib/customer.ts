@@ -1,16 +1,16 @@
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
-import { Payment, $stripe, xor, unxor, Address, stripeParseError, Card, CashBalance, crypto_sha256, crypto_randomToken, crypto_fingerprint } from './payments';
+import { KngPayment, $stripe, xor, unxor, KngPaymentAddress, stripeParseError, KngCard, CashBalance, crypto_sha256, crypto_randomToken, crypto_fingerprint } from './payments';
 import Config from './config';
 
 
 export class Customer {
 
-  private _available: boolean;
   private _sources:Stripe.Card[]|any;
   private _id:string;
   private _metadata:any;
   private _cashbalance:any;
+  private _balance: number;
 
   //
   // phone or email share the same role of identity
@@ -25,14 +25,14 @@ export class Customer {
 
   //
   // collected from metadata
-  private _addresses:Address[];
+  private _addresses:KngPaymentAddress[];
 
   /**
    * ## customer(id,email,displayName,uid)
    * @param  customer created by Stripe
    * @constructor
    */
-  private constructor(id:string,email:string, phone: string, cashbalance:any, metadata:any) {
+  private constructor(id:string,email:string, phone: string, cashbalance:any, balance:number, metadata:any) {
     assert(id);
     assert(email);
     assert(phone);
@@ -40,6 +40,7 @@ export class Customer {
     assert(metadata.fname);
     assert(metadata.lname);
     
+    this._balance = balance;
     this._email = email;
     this._phone = phone;
     this._fname = metadata.fname;
@@ -65,6 +66,11 @@ export class Customer {
     return this._email;
   }
 
+  //
+  // balance can be coupled with Card or Cashbalance
+  get balance() {
+    return this._balance/100;
+  }
   
   get phone() {
     return this._phone;
@@ -119,7 +125,7 @@ export class Customer {
         expand: ['cash_balance']
       });  
 
-      return new Customer(customer.id,email,phone,customer.cash_balance,customer.metadata); 
+      return new Customer(customer.id,email,phone,customer.cash_balance,0,customer.metadata); 
     }catch(err) {
       throw parseError(err);
     } 
@@ -146,6 +152,7 @@ export class Customer {
         stripe.email,
         stripe.phone,
         stripe.cash_balance,
+        stripe.balance,
         stripe.metadata
       ); 
       await customer.listMethods();
@@ -155,7 +162,7 @@ export class Customer {
     } 
   }
 
-  async addressAdd(address: Address) {
+  async addressAdd(address: KngPaymentAddress) {
     assert(this._metadata.uid);
     assert(this._metadata.fname);
     assert(this._metadata.lname);
@@ -176,7 +183,7 @@ export class Customer {
     }     
   }
 
-  async addressRemove(address: Address) {
+  async addressRemove(address: KngPaymentAddress) {
     assert(this._metadata.uid);
     assert(this._metadata.fname);
     assert(this._metadata.lname);
@@ -196,7 +203,7 @@ export class Customer {
     }     
   }
 
-  async addressUpdate(address: Address) {
+  async addressUpdate(address: KngPaymentAddress) {
     assert(this._metadata.uid);
     assert(this._metadata.fname);
     assert(this._metadata.lname);
@@ -262,7 +269,73 @@ export class Customer {
     } 
   }
 
+
   //
+  // A customer’s credit balance represents internal funds that they can use for futur payment. 
+  // If positive, the customer has an amount owed that will be added to their next invoice. 
+  // If negative, the customer has credit to apply to their next payment. 
+  // Only admin user can update the available credit value
+  async allowCredit(allow:boolean) {
+    // const maxcredit = Config.option('allowMaxCredit');
+    // if(credit > maxcredit) {
+    //   throw new Error("Credit limit is "+maxcredit/100);
+    // }
+
+    if(allow) {
+      //
+      // this is the signature of an credit authorization
+      const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
+      this._metadata['allowCredit'] = fingerprint;  
+    }else {
+      this._metadata['allowCredit'] = undefined;
+    }
+
+    const customer = await $stripe.customers.update(
+      this._id,
+      {metadata: this._metadata}
+    );
+    return customer;
+  }
+
+
+  // 
+  // add credit to a customer
+  // FIXME: balance is completly unsecure 
+  async updateCredit(amount:number) {
+    // const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
+    // if(this._metadata['allowCredit'] != fingerprint) {
+    //   throw new Error("Credit is not allowed for your account");
+    // }  
+
+    //
+    // max negative credit verification
+    if((this.balance + amount)<0) {
+      if(!this.allowedCredit()){
+        throw new Error("Credit must be a positive number");
+      }
+      const maxcredit = Config.option('allowMaxCredit')/100;    
+      if((this.balance + amount)<(-maxcredit)) {
+        throw new Error("Negative credit exceed limitation of "+maxcredit);
+      }
+    }
+
+    //
+    // max amount credit verification
+    const maxamount = Config.option('allowMaxAmount')/100;    
+    if((this.balance + amount)>maxamount) {
+      throw new Error("Credit exceed limitation of "+maxamount);
+    }
+
+    //
+    // update customer credit 
+    const balance = Math.round((amount+this.balance)*100);
+    const customer = await $stripe.customers.update(
+      this._id,
+      {balance}
+    );
+    this._balance = balance;
+
+  }
   //
   // A customer’s cash balance represents funds that they can use for futur payment. 
   // By default customer dosen't have access to his cash balance
@@ -270,7 +343,7 @@ export class Customer {
   // that represents liability between us and the customer.
   async createCashBalance(month:string,year:string, credit?:number):Promise<CashBalance>{
     credit = credit||0;
-    const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
+    const fingerprint = crypto_fingerprint(this.id+this.uid+'cash');
     const id = crypto_randomToken();
 
     //
@@ -281,13 +354,13 @@ export class Customer {
     // }
 
     const cashbalance:CashBalance = {
-      type:Payment.balance,
+      type:KngPayment.balance,
       id:xor(id),
       alias:(fingerprint),
       expiry:month+'/'+year,
       funding:credit?'credit':'debit',
       limit:credit,
-      issuer:'invoice'
+      issuer:'cash'
     }
 
 
@@ -360,8 +433,11 @@ export class Customer {
   * @param {string} paymentId Stripe id of the source
   * @returns {any} Promise on deletion of the source
   */
-  async removeMethod(method:Card) {
+  async removeMethod(method:KngCard) {
     try{
+      if(!method || !method.id) {
+        throw new Error("La méthode de paiement n'est pas valide");
+      }
       const index:number= this._sources.findIndex(src => src.id == method.id);
 
       if (index == -1) {
@@ -378,12 +454,12 @@ export class Customer {
       // verify if payment is used 
       const payment_used = subs.data.some(sub => sub.default_payment_method = card_id)
       if(payment_used) {
-        throw new Error("Impossible de supprimer une méthode paiement utilisée par une souscription");
+        throw new Error("Impossible de supprimer une méthode de paiement utilisée par une souscription");
       }
 
       //
       // remove vash balance payment method
-      if(this._sources[index].issuer=='invoice'){
+      if(this._sources[index].issuer=='cash'){
         this._metadata['cashbalance'] = null;
         const customer = await $stripe.customers.update(
           this._id,
@@ -420,6 +496,16 @@ export class Customer {
 
   }
 
+
+  //
+  // verify if customer is allowed for credit
+  allowedCredit(){
+    //
+    // this is the signature of an credit authorization
+    const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
+    return this._metadata['allowCredit'] == fingerprint;
+  }
+
   findMethodByID(id) {
     return this._sources.find(card => card.id == id);
   }  
@@ -444,7 +530,7 @@ function parseAddress(metadata) {
   const addresses = [];
   keys.forEach(key => {
     try{
-      const address = JSON.parse(metadata[key]) as Address;
+      const address = JSON.parse(metadata[key]) as KngPaymentAddress;
       addresses.push(address);  
     }catch(err){
       console.log('---- DBG error parseAddress',err);

@@ -5,6 +5,7 @@ module.exports = {
     currency:'CHF',
     allowedCurrencies:['CHF','US','EU'],
     allowMaxAmount:40000,
+    allowMaxCredit:40000,
     reservedAmount:1.15,
     sandbox:false,
     debug:true,

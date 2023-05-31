@@ -4,7 +4,7 @@
  */
 
 
-const config =require("../dist/config").default;
+
 const payments = require("../dist/payments");
 const should = require('should');
 

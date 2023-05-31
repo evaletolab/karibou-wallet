@@ -7,7 +7,7 @@
 import Config from './config';
 import { Transaction } from './transaction';
 import { Account } from './account';
-import { Payment, $stripe } from './payments';
+import { $stripe } from './payments';
 
 export interface Destination {
   account:Account;

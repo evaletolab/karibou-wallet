@@ -4,6 +4,9 @@
  */
 
 const config =require("../dist/config").default;
+const options = require('../config-test');
+config.configure(options.payment);
+
 const customer = require("../dist/customer");
 const payments = require("../dist/payments").Payment;
 const crypto_fingerprint = require("../dist/payments").crypto_fingerprint;
@@ -13,7 +16,7 @@ const $stripe = require("../dist/payments").$stripe;
 const should = require('should');
 
 
-describe("Class customer", function(){
+describe("customer", function(){
   this.timeout(8000);
 
   const custCleanList = [];
@@ -101,6 +104,7 @@ describe("Class customer", function(){
     cust.should.property('addMethod');
     cust.email.should.equal("test@email.com");
     cust.uid.should.equal('1234');
+    cust.balance.should.equal(0);
     cust.phone.should.equal('022345');
     cust.name.familyName.should.equal("Foo");
     cust.name.givenName.should.equal("Bar");
@@ -215,7 +219,7 @@ describe("Class customer", function(){
   it("Add cashbalance payments method ", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);
     const cashbalance = await cust.createCashBalance(6,2026,100);
-    cashbalance.issuer.should.equal('invoice');
+    cashbalance.issuer.should.equal('cash');
     cashbalance.funding.should.equal('credit');
     cashbalance.limit.should.equal(100);
     dateFromExpiry(cashbalance.expiry).getMonth().should.equal(5);
@@ -225,7 +229,7 @@ describe("Class customer", function(){
   it("Update cashbalance payments method ", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);
     const cashbalance = await cust.createCashBalance(7,2026,0);
-    cashbalance.issuer.should.equal('invoice');
+    cashbalance.issuer.should.equal('cash');
     cashbalance.funding.should.equal('debit');
     cashbalance.limit.should.equal(0);
     dateFromExpiry(cashbalance.expiry).getMonth().should.equal(6);
@@ -234,9 +238,9 @@ describe("Class customer", function(){
 
   it("Get cashbalance payments method ", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);
-    const alias = (crypto_fingerprint(cust.id+cust.uid+'invoice'));
+    const alias = (crypto_fingerprint(cust.id+cust.uid+'cash'));
     const cashbalance = cust.findMethodByAlias(alias);
-    cashbalance.issuer.should.equal('invoice');
+    cashbalance.issuer.should.equal('cash');
     cashbalance.funding.should.equal('debit');
     cashbalance.limit.should.equal(0);
 
@@ -316,9 +320,23 @@ describe("Class customer", function(){
     cust.methods[0].expiry.should.equal((now.getMonth()+1)+'/2024')
   });
 
+  it("Remove unknown payment's method", async function() {
+    const cust = await customer.Customer.get(custCleanList[0]);    
+    const alias = (crypto_fingerprint(cust.id+cust.uid+'pouet'));
+    const card = cust.findMethodByAlias(alias);
+
+    try{
+      await cust.removeMethod(card);
+      should.not.exist(true);
+    }catch(err) {
+      should.exist(err);
+    }
+
+  });
+
   it("Remove cahsbalance payment's method", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);    
-    const alias = (crypto_fingerprint(cust.id+cust.uid+'invoice'));
+    const alias = (crypto_fingerprint(cust.id+cust.uid+'cash'));
     const card = cust.findMethodByAlias(alias);
     await cust.removeMethod(card);
     should.not.exist(cust.findMethodByAlias(alias));

@@ -1,7 +1,7 @@
 {
   "name": "karibou-wallet",
   "description": "Simple Payment API client library for Karibou.ch",
-  "version": "2.9.9",
+  "version": "2.9.8",
   "author": "Olivier Evalet <olivier@karibou.ch>",
   "main": "dist/index",
   "files": [
@@ -47,7 +47,7 @@
     "node >=16.x.0"
   ],
   "scripts": {
-    "test": "./node_modules/.bin/mocha test",
+    "test": "NODE_ENV=test  ./node_modules/.bin/mocha test",
     "build": "rm -rf dist;./node_modules/.bin/tsc -p lib/"
   },
   "keywords": [

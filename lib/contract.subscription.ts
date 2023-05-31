@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
 import { Customer } from './customer';
-import { $stripe, Address, Card, unxor, xor } from './payments';
+import { $stripe, KngPaymentAddress, KngCard, unxor, xor } from './payments';
 import Config from './config';
 
 export type Interval = Stripe.Plan.Interval;
@@ -41,7 +41,7 @@ export enum SchedulerItemFrequency {
   RECURRENT_MONTH     = 4
 }
 
-export interface SubscriptionAddress extends Address {
+export interface SubscriptionAddress extends KngPaymentAddress {
   price: number;
   dayOfWeek?: number;
 }
@@ -202,7 +202,7 @@ export class SubscriptionContract {
 
   //
   // Update current contract with the new customer payment method 
-  async updatePaymentMethod(card:Card) {
+  async updatePaymentMethod(card:KngCard) {
     this._subscription = await $stripe.subscriptions.update(this.id, {
       default_payment_method: unxor(card.id)
     });    
@@ -224,7 +224,7 @@ export class SubscriptionContract {
   // - multiple subscription for 
   //   https://stripe.com/docs/billing/subscriptions/multiple-products#multiple-subscriptions-for-a-customer
   //   note: use the same billing_cycle_anchor for the same customer
-  static async create(customer:Customer, card:Card, interval:Interval, start_from, shipping:SubscriptionAddress, cartItems, dayOfWeek, fees) {
+  static async create(customer:Customer, card:KngCard, interval:Interval, start_from, shipping:SubscriptionAddress, cartItems, dayOfWeek, fees) {
     
     // check Date instance
     assert(start_from && start_from.toDateString);
