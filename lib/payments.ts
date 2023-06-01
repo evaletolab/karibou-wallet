@@ -25,7 +25,7 @@ export type KngPaymentStatus = "pending"
 													| "refunded"
 													| "voided";
 
-export type KngPaymentExendedStatus = "refund" | "prepaid" | "invoice";
+export type KngPaymentExendedStatus = "refunded" | "prepaid" | "invoice";
 
 //
 // when importing a transaction, the context can be on Stripe or on Karibou database
@@ -100,7 +100,6 @@ export interface CashBalance extends KngPaymentSource {
   issuer:"cash";
   funding:string;
   expiry:string;
-	limit:number;
 }
 
 export interface CreditBalance extends KngPaymentSource {

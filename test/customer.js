@@ -218,7 +218,7 @@ describe("customer", function(){
 
   it("Add cashbalance payments method ", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);
-    const cashbalance = await cust.createCashBalance(6,2026,100);
+    const cashbalance = await cust.createCashBalance(6,2026);
     cashbalance.issuer.should.equal('cash');
     cashbalance.funding.should.equal('credit');
     cashbalance.limit.should.equal(100);
@@ -228,7 +228,7 @@ describe("customer", function(){
 
   it("Update cashbalance payments method ", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);
-    const cashbalance = await cust.createCashBalance(7,2026,0);
+    const cashbalance = await cust.createCashBalance(7,2026);
     cashbalance.issuer.should.equal('cash');
     cashbalance.funding.should.equal('debit');
     cashbalance.limit.should.equal(0);

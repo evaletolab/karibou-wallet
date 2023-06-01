@@ -18,12 +18,11 @@ const axios = require('axios');
 const { default: Config } = require("../dist/config");
 
 
-describe("Class transaction with customer debit", function(){
+describe("Class transaction with negative customer credit", function(){
   this.timeout(8000);
 
   let defaultCustomer;
   let defaultPaymentAlias;
-  let defaultTXtoRefund;
   let defaultTX;
 
   const paymentOpts = {
@@ -45,33 +44,36 @@ describe("Class transaction with customer debit", function(){
     await $stripe.customers.del(defaultCustomer.id);
   });
 
-  it("Create customer with debit balance", async function(){
+  it("Create customer with credit balance", async function(){
     config.option('debug',false);
     defaultCustomer = await customer.Customer.create("test@email.com","Foo","Bar","022345",1234);
 
-    //
-    // valid US - 067c7f79097066667c6477516477767d 
-    const card = await defaultCustomer.addMethod(unxor(card_mastercard_prepaid.id));
+
+    // 
+    // testing negative credit
+    const card = await defaultCustomer.allowCredit(true);
+
+    should.exist(card);
+    should.exist(card.alias);
     defaultPaymentAlias = card.alias;
   });
 
 
 
-  it("Transaction create with insuffisant fund throw an error", async function() {
+  it("Transaction create with exceeded credit limit throw an error", async function() {
     try{
-      await defaultCustomer.updateCredit(10);
-      const tx = await transaction.Transaction.authorize(defaultCustomer,default_card_invoice,10.1,paymentOpts)
+      const tx = await transaction.Transaction.authorize(defaultCustomer,default_card_invoice,40.1,paymentOpts)
       should.not.exist("dead zone");
     }catch(err) {
-      err.message.should.containEql('balance is insufficient to complete the payment')
+      err.message.should.containEql('Negative credit exceed limitation')
     }
   });  
 
   it("Transaction create with suffisant fund is ok", async function() {
-    const tx = await transaction.Transaction.authorize(defaultCustomer,default_card_invoice,10,paymentOpts)
+    const tx = await transaction.Transaction.authorize(defaultCustomer,default_card_invoice,10,paymentOpts);
     should.exist(tx);
     defaultCustomer = await customer.Customer.get(tx.customer);
-    defaultCustomer.balance.should.equal(0)
+    defaultCustomer.balance.should.equal(-10)
     tx.provider.should.equal("invoice");
     tx.amount.should.equal(10);
     tx.status.should.equal("authorized");
@@ -172,7 +174,7 @@ describe("Class transaction with customer debit", function(){
     const tx = await transaction.Transaction.fromOrder(orderPayment);
     defaultTX = await tx.capture(4.0);
     defaultTX.provider.should.equal("invoice");
-    defaultTX.status.should.equal("paid");
+    defaultTX.status.should.equal("invoice");
     defaultTX.amount.should.equal(4);
     defaultTX.refunded.should.equal(6);
   });

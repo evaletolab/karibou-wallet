@@ -190,8 +190,8 @@ export class SubscriptionContract {
 
   async resumeManualy(){
     const metadata = this._subscription.metadata;
-    metadata.from = undefined;
-    metadata.to = undefined;
+    metadata.from = null;
+    metadata.to = null;
     this._subscription = await $stripe.subscriptions.update(
       this._subscription.id, {pause_collection: '', metadata}
     );

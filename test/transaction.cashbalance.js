@@ -51,7 +51,7 @@ describe("Class transaction with cashbalance", function(){
 
     //
     // create uniq cashbalance for this user
-    const card = await defaultCustomer.createCashBalance(5,now.getFullYear()+4,0);
+    const card = await defaultCustomer.createCashBalance(5,now.getFullYear()+4);
     should.exist(card);
     should.exist(defaultCustomer.cashbalance.available)
     should.exist(defaultCustomer.cashbalance.available.eur)
@@ -103,7 +103,7 @@ describe("Class transaction with cashbalance", function(){
 
   it("update customer cash balance to accept a max credit 100 fr", async function() {
     const now = new Date();
-    const card = await defaultCustomer.createCashBalance(5,now.getFullYear()+4,100);
+    const card = await defaultCustomer.createCashBalance(5,now.getFullYear()+4);
     should.exist(card);
     card.limit.should.equal(100);
     
@@ -171,7 +171,7 @@ describe("Class transaction with cashbalance", function(){
     tx.authorized.should.equal(false);
     tx.captured.should.equal(true);
     tx.canceled.should.equal(false);
-    tx.status.should.equal('refund');
+    tx.status.should.equal('refunded');
   });
 
   it("Transaction cancel a captured tx throw an error", async function() {

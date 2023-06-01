@@ -77,17 +77,6 @@ describe("customer.balance", function(){
     cust.balance.should.equal(0);
   });
 
-  xit("Add credit throw an exception", async function() {
-    const cust = await customer.Customer.get(custCleanList[0]);
-    try{
-      await cust.updateCredit(1);      
-      should.not.exist(true);
-    }catch(err) {
-      should.exist(err);
-    }
-  });
-
-
 
   it("Add negative credit throw an exception", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);

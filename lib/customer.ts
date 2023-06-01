@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
-import { KngPayment, $stripe, xor, unxor, KngPaymentAddress, stripeParseError, KngCard, CashBalance, crypto_sha256, crypto_randomToken, crypto_fingerprint } from './payments';
+import { KngPayment, $stripe, xor, unxor, KngPaymentAddress, stripeParseError, KngCard, CashBalance, crypto_sha256, crypto_randomToken, crypto_fingerprint, CreditBalance } from './payments';
 import Config from './config';
 
 
@@ -276,25 +276,49 @@ export class Customer {
   // If negative, the customer has credit to apply to their next payment. 
   // Only admin user can update the available credit value
   async allowCredit(allow:boolean) {
-    // const maxcredit = Config.option('allowMaxCredit');
-    // if(credit > maxcredit) {
-    //   throw new Error("Credit limit is "+maxcredit/100);
-    // }
 
+    const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
+    const id = crypto_randomToken();
+
+    let creditbalance:CreditBalance;
     if(allow) {
+
+      creditbalance = {
+        type:KngPayment.credit,
+        id:xor(id),
+        alias:(fingerprint),
+        expiry:'12/30',
+        funding:'credit',
+        issuer:'invoice',
+        limit:Config.option('allowMaxCredit')
+      }
+  
+  
+  
+      //
+      // expose Credit Balance to this customer
+      this._metadata['creditbalance'] = JSON.stringify(creditbalance,null,0);
+  
       //
       // this is the signature of an credit authorization
-      const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
       this._metadata['allowCredit'] = fingerprint;  
     }else {
-      this._metadata['allowCredit'] = undefined;
+      this._metadata['allowCredit'] = null;
+      this._metadata['creditbalance'] = null;
+      const index:number= this._sources.findIndex(src => src.issuer == 'invoice');
+      if(index>-1){
+        this._sources.splice(index,1);
+      }
     }
 
     const customer = await $stripe.customers.update(
       this._id,
       {metadata: this._metadata}
     );
-    return customer;
+
+    //
+    // return credit card when it exist
+    return creditbalance;
   }
 
 
@@ -341,8 +365,7 @@ export class Customer {
   // By default customer dosen't have access to his cash balance
   // We can activate his cash balance and also authorize a amount of credit 
   // that represents liability between us and the customer.
-  async createCashBalance(month:string,year:string, credit?:number):Promise<CashBalance>{
-    credit = credit||0;
+  async createCashBalance(month:string,year:string):Promise<CashBalance>{
     const fingerprint = crypto_fingerprint(this.id+this.uid+'cash');
     const id = crypto_randomToken();
 
@@ -358,8 +381,7 @@ export class Customer {
       id:xor(id),
       alias:(fingerprint),
       expiry:month+'/'+year,
-      funding:credit?'credit':'debit',
-      limit:credit,
+      funding:'debit',
       issuer:'cash'
     }
 
@@ -416,6 +438,14 @@ export class Customer {
       const cashbalance = this._metadata['cashbalance'];
       if(cashbalance) {
         const payment = JSON.parse(cashbalance) as CashBalance;
+        this._sources.push(payment);        
+      }
+
+      //
+      // credit customer
+      const creditbalance = this._metadata['creditbalance'];
+      if(creditbalance) {
+        const payment = JSON.parse(creditbalance) as CreditBalance;
         payment.limit = payment.limit ? parseFloat(payment.limit+''):0;
 
         this._sources.push(payment);        
@@ -455,6 +485,17 @@ export class Customer {
       const payment_used = subs.data.some(sub => sub.default_payment_method = card_id)
       if(payment_used) {
         throw new Error("Impossible de supprimer une méthode de paiement utilisée par une souscription");
+      }
+
+      //
+      // remove credit balance payment method
+      if(this._sources[index].issuer=='invoice'){
+        this._metadata['creditbalance'] = null;
+        this._metadata['allowCredit'] = null;
+        const customer = await $stripe.customers.update(
+          this._id,
+          {metadata: this._metadata}
+        );
       }
 
       //
