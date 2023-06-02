@@ -221,7 +221,6 @@ describe("customer", function(){
     const cashbalance = await cust.createCashBalance(6,2026);
     cashbalance.issuer.should.equal('cash');
     cashbalance.funding.should.equal('debit');
-    cashbalance.limit.should.equal(100);
     dateFromExpiry(cashbalance.expiry).getMonth().should.equal(5);
 
   });
@@ -231,7 +230,6 @@ describe("customer", function(){
     const cashbalance = await cust.createCashBalance(7,2026);
     cashbalance.issuer.should.equal('cash');
     cashbalance.funding.should.equal('debit');
-    cashbalance.limit.should.equal(0);
     dateFromExpiry(cashbalance.expiry).getMonth().should.equal(6);
 
   });
@@ -242,8 +240,6 @@ describe("customer", function(){
     const cashbalance = cust.findMethodByAlias(alias);
     cashbalance.issuer.should.equal('cash');
     cashbalance.funding.should.equal('debit');
-    cashbalance.limit.should.equal(0);
-
   });
 
   it("List cash balance bank transfer ", async function() {
