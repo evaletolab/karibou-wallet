@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
-import { KngPayment, $stripe, xor, unxor, KngPaymentAddress, stripeParseError, KngCard, CashBalance, crypto_sha256, crypto_randomToken, crypto_fingerprint, CreditBalance } from './payments';
+import { KngPayment, $stripe, xor, unxor, KngPaymentAddress, stripeParseError, KngCard, CashBalance, crypto_sha256, crypto_randomToken, crypto_fingerprint, CreditBalance, KngPaymentSource } from './payments';
 import Config from './config';
 
 
@@ -110,6 +110,21 @@ export class Customer {
     return this._cashbalance;
   }
 
+  //
+  // search api
+  // https://stripe.com/docs/search
+  static async allWithActiveCreditbalance(){
+    const customer = await $stripe.customers.search({
+      query: "-metadata['creditbalance']:null",
+    });
+  }
+
+  static async search(query){
+    const customer = await $stripe.customers.search({
+      query: `name~'${query}' OR email~'${query}'`
+    });
+  }
+
   /**
   * ## customer.create()
   * Async constructor of customer
@@ -120,6 +135,7 @@ export class Customer {
       const customer = await $stripe.customers.create({
         description: fname + ' ' + lname + ' id:'+uid,
         email: email,
+        name: fname + ' ' + lname,
         phone,
         metadata: {uid,fname, lname},
         expand: ['cash_balance']
@@ -234,6 +250,7 @@ export class Customer {
     });
   }
 
+
   /**
   * ## customer.addMethod()
   * attach method of payment to the customer
@@ -269,6 +286,28 @@ export class Customer {
     } 
   }
 
+
+  //
+  // check if a payment method is valid
+  async checkMethods(methods:KngPaymentSource[]) {
+
+    // 
+    // make sure that we read the latest
+    await this.listMethods();
+
+    for (const method of methods){
+      const id = xor(method.id);
+      const alias = xor(method.alias);
+      if(!id || !alias) {
+        throw new Error("La référence de la carte n'est pas compatible avec le service de paiement");
+      }
+      
+      if(!this.findMethodByAlias(_method => _method.alias == method.alias)){
+        throw new Error("La référence de la carte n'est pas compatible avec le service de paiement");
+      }
+    }
+  
+  }
 
   //
   // A customer’s credit balance represents internal funds that they can use for futur payment. 
