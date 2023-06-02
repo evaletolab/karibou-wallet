@@ -232,6 +232,10 @@ export class SubscriptionContract {
     assert(shipping.lat);
     assert(shipping.lng);
 
+    if(card.issuer=="invoice") {
+      throw new Error("Le paiement par facture n'est pas disponible pour la souscription");
+    }
+
     // check is subscription must be updated or created
     for(let item of cartItems) {
       item.product = await findOrCreateProductFromItem(item);
@@ -377,6 +381,10 @@ function createItemsFromCart(cartItems, fees) {
     };
 
     return {metadata, quantity: item.quantity,price_data:instance};
+  }
+
+  if(fees>1) {
+    throw new Error("Incorrect params");
   }
 
   //
