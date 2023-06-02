@@ -4,13 +4,24 @@
 
 ## Main usage
 
-The purpose of this project is to provide a simple and intiutive API to handle a simple Wallet manager for your e-commerce. It has bean designed to work on server side.
+The purpose of this project is to provide a simple and intuitive API to handle a simple Wallet manager for our karibou.ch marketplace. It has bean designed to work on server side and it's usefull for,
+* Stripe payment (card, SEPA, ...)
+* Simple debit balance account
+* Simple credit balance account (for invoice)
+* Two step payment (authorization, capture, refund)
+* Subscription (weekly, monthly)
+* Customer management (security, sensible data)
+  * email and name 
+  * phones
+  * addresses
+  * payment methods
+* Simple signin verification (OTP) with SMS 
 
 ## Prerequisites
-install node.js with [NVM](https://github.com/creationix/nvm) (required). 
+install node.js with [NVM](https://github.com/nvm-sh/nvm#installing-and-updating) (required). 
 
-    nvm install v6.9.5
-    nvm use v6.9.5
+    nvm install v18.x
+    nvm use v8.x
 
 ## Installation
 From github,    
@@ -36,25 +47,12 @@ sandbox.
 ## Wallet specification 1.0
 * [specifications of our wallet with Stripe](../../wiki/Wallet-1.0-Specifications-(Stripe-backend))
 
-### Overview
-When using the karibou-wallet api, you basically deal with 3 separate concepts: 
-- wallet (the container of an amount of money),
-- transaction (helper to manage charges)
-- smartcontract (multiple destinations)
-- transfer information
-
-
-## Authors & spcial thanks :heart:
-
-- David Pate, https://github.com/patedavid
-- Evalet Olivier, https://github.com/evaletolab
-- Noria Foukia Enseignante en mathématiques @HEPIA 
 
 
 ## License
 The API is available under AGPL V3 to protect the long term interests of the community – you are free to use it with no restrictions but if you change the server code, then those code changes must be contributed back.
 
-> Copyright (c) 2014 Olivier Evalet (http://evaletolab.ch/)<br/>
+> Copyright (c) 2014 Olivier Evalet (https://karibou.ch/)<br/>
 > <br/><br/>
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the “Software”), to deal
