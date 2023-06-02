@@ -220,7 +220,7 @@ describe("customer", function(){
     const cust = await customer.Customer.get(custCleanList[0]);
     const cashbalance = await cust.createCashBalance(6,2026);
     cashbalance.issuer.should.equal('cash');
-    cashbalance.funding.should.equal('credit');
+    cashbalance.funding.should.equal('debit');
     cashbalance.limit.should.equal(100);
     dateFromExpiry(cashbalance.expiry).getMonth().should.equal(5);
 

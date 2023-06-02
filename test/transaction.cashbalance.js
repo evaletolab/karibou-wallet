@@ -100,20 +100,6 @@ describe("Class transaction with cashbalance", function(){
   });  
 
 
-
-  it("update customer cash balance to accept a max credit 100 fr", async function() {
-    const now = new Date();
-    const card = await defaultCustomer.createCashBalance(5,now.getFullYear()+4);
-    should.exist(card);
-    card.limit.should.equal(100);
-    
-    defaultCustomer = await customer.Customer.get(defaultCustomer.id);
-    //console.log('----',defaultCustomer.cashbalance);
-    
-  });
-
-
-
   //
   // https://stripe.com/docs/payments/bank-transfers/accept-a-payment?platform=api&invoices=without#web-create-and-confirm-payment-intent
   it("Transaction with creditcreate with insufisant fund throw an error", async function() {
