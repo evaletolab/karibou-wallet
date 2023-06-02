@@ -81,10 +81,11 @@ export interface KngPaymentAddress {
 export interface KngPaymentSource {
   type:KngPayment;
   id:string;
+	alias:string;
+	issuer:string;
 }
 
 export interface KngCard extends KngPaymentSource {
-  alias:string;
   country:string;
   last4:string;
   issuer:string;
@@ -96,14 +97,12 @@ export interface KngCard extends KngPaymentSource {
 
 
 export interface CashBalance extends KngPaymentSource {
-  alias:string;
   issuer:"cash";
   funding:string;
   expiry:string;
 }
 
 export interface CreditBalance extends KngPaymentSource {
-  alias:string;
   issuer:"invoice";
   funding:string;
   expiry:string;
