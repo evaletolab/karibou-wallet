@@ -1,8 +1,12 @@
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
-import { KngPayment, $stripe, xor, unxor, KngPaymentAddress, stripeParseError, KngCard, CashBalance, crypto_sha256, crypto_randomToken, crypto_fingerprint, CreditBalance, KngPaymentSource } from './payments';
+import { $stripe, stripeParseError, crypto_randomToken, crypto_fingerprint, xor, unxor, 
+         KngPayment, KngPaymentAddress, KngCard, CashBalance, CreditBalance } from './payments';
 import Config from './config';
 
+//
+// using memory cache limited to 1000 customer in same time for 4h
+const cache = new (require("lru-cache").LRUCache)({maxAge:1000 * 60 * 60 * 4,max:1000});
 
 export class Customer {
 
@@ -54,6 +58,10 @@ export class Customer {
     // when loading existant customer
     this._sources = [];
     this._addresses = parseAddress(metadata);
+
+    //
+    // put this new customer in cache 4h
+    cache.set(this._uid,this);
   }
 
   //
@@ -120,9 +128,18 @@ export class Customer {
   }
 
   static async search(query){
-    const customer = await $stripe.customers.search({
-      query: `name~'${query}' OR email~'${query}'`
+    const customers = await $stripe.customers.search({
+      query: `phone~'${query}' OR name~'${query}' OR email~'${query}'`
     });
+
+    return customers.data.map(stripe => new Customer(
+      stripe.id,
+      stripe.email,
+      stripe.phone,
+      stripe.cash_balance,
+      stripe.balance,
+      stripe.metadata
+    ));
   }
 
   /**
@@ -153,7 +170,37 @@ export class Customer {
     //   throw parseError(err);
     // } 
   }
+      
+  /**
+  * ## customer.lookup() from customer in cache (should not be async)
+  * @returns a Customer instance from LRU-cache
+  */
+   static lookup(kuid) {
+    let sid = cache.get(kuid+'') as Customer;
+    if(sid) {
+      return sid;
+    }
+
+    // const customer = await $stripe.customers.search({
+    //   query: "metadata['uid']:'"+kuid+"'", limit:1
+    // });
     
+    // if(!customer.data.length) {
+    //   return;
+    // }
+
+    // const stripe = customer.data[0];
+    // sid = new Customer(
+    //   stripe.id,
+    //   stripe.email,
+    //   stripe.phone,
+    //   stripe.cash_balance,
+    //   stripe.balance,
+    //   stripe.metadata
+    // ); 
+    // cache.set(kuid,sid);
+    return sid;
+   }
 
 
   /**
@@ -194,6 +241,10 @@ export class Customer {
       
       this._metadata = customer.metadata;
       this._addresses = parseAddress(customer.metadata);  
+
+      //
+      // put this new customer in cache 4h
+      cache.set(this._uid,this);
     }catch(err) {
       throw parseError(err);
     }     
@@ -213,7 +264,11 @@ export class Customer {
       );
       
       this._metadata = customer.metadata;
-      this._addresses = parseAddress(customer.metadata);  
+      this._addresses = parseAddress(customer.metadata); 
+      //
+      // put this new customer in cache 4h
+      cache.set(this._uid,this);
+
     }catch(err) {
       throw parseError(err);
     }     
@@ -234,6 +289,10 @@ export class Customer {
       
       this._metadata = customer.metadata;
       this._addresses = parseAddress(customer.metadata);  
+      //
+      // put this new customer in cache 4h
+      cache.set(this._uid,this);
+
     }catch(err) {
       throw parseError(err);
     }     
@@ -280,6 +339,11 @@ export class Customer {
         await $stripe.paymentMethods.detach(unxor(exist.id));        
       }
       this._sources.push(card);
+
+      //
+      // put this new customer in cache 4h
+      cache.set(this._uid,this);
+
       return card;
     }catch(err) {
       throw parseError(err);
@@ -317,8 +381,8 @@ export class Customer {
         result[alias] = {error : "La référence de la carte n'est pas compatible avec le service de paiement"};
         continue;
       }
-    }
-  
+    }  
+
     return result;
   }
 
@@ -369,6 +433,10 @@ export class Customer {
     );
 
     //
+    // put this new customer in cache 4h
+    cache.set(this._uid,this);
+
+    //
     // return credit card when it exist
     return creditbalance;
   }
@@ -411,6 +479,10 @@ export class Customer {
     );
     this._balance = balance;
 
+    //
+    // put this new customer in cache 4h
+    cache.set(this._uid,this);
+
   }
   //
   // A customer’s cash balance represents funds that they can use for futur payment. 
@@ -450,7 +522,11 @@ export class Customer {
     this._cashbalance = customer.cash_balance ||{};
     this._metadata = customer.metadata;
     this._addresses = parseAddress(customer.metadata);  
-    this._sources.push(cashbalance)
+    this._sources.push(cashbalance);
+
+    //
+    // put this new customer in cache 4h
+    cache.set(this._uid,this);
 
     return cashbalance;
   }
@@ -504,6 +580,11 @@ export class Customer {
       }
 
       return this._sources.slice();
+
+      //
+      // put this new customer in cache 4h
+      cache.set(this._uid,this);
+
     }catch(err){
       throw parseError(err);
     }
@@ -560,6 +641,9 @@ export class Customer {
         );
     
         this._sources.splice(index, 1);
+        //
+        // put this new customer in cache 4h
+        cache.set(this._uid,this);
         return;
       }
   
@@ -581,8 +665,10 @@ export class Customer {
         confirmation = await $stripe.customers.deleteSource(this._id,card_id);
         this._sources.splice(index, 1);
       }
-      //console.log(" --- DBG removeMethod ",confirmation.customer);
-  
+
+      //
+      // put this new customer in cache 4h
+      cache.set(this._uid,this);
     }catch(err) {
       throw (parseError(err));
     }

@@ -124,6 +124,19 @@ describe("customer", function(){
 
   });
 
+  it("Get customer with karibou id", async function() {
+    const cust = await customer.Customer.lookup(1234);
+    should.exist(cust);
+    cust.should.property('addMethod');
+    cust.email.should.equal("test@email.com");
+    cust.uid.should.equal('1234');
+    cust.phone.should.equal('022345');
+    cust.name.familyName.should.equal("Foo");
+    cust.name.givenName.should.equal("Bar");
+
+  });
+
+
   it("Add new address", async function() {
     const add = {
       name:'Olivier E',
