@@ -289,24 +289,37 @@ export class Customer {
 
   //
   // check if a payment method is valid
-  async checkMethods(methods:KngPaymentSource[]) {
+  // FIXME: missing test for checkMethods(addIntent:boolean)
+  async checkMethods(addIntent:boolean) {
 
     // 
-    // make sure that we read the latest
-    await this.listMethods();
+    // make sure that we get the latest
+    const methods = await this.listMethods();
+    const result:any = {
+      intent: false
+    };
+
+    //
+    // only for 3d secure 
+    if(addIntent) {
+      result.intent = await this.addMethodIntent();
+    }
 
     for (const method of methods){
       const id = xor(method.id);
       const alias = xor(method.alias);
       if(!id || !alias) {
-        throw new Error("La référence de la carte n'est pas compatible avec le service de paiement");
+        result[alias] = {error : "La référence de la carte n'est pas compatible avec le service de paiement"};
+        continue;
       }
-      
-      if(!this.findMethodByAlias(_method => _method.alias == method.alias)){
-        throw new Error("La référence de la carte n'est pas compatible avec le service de paiement");
+      result[alias] = this.findMethodByAlias(_method => _method.alias == method.alias);
+      if(!result[alias]){
+        result[alias] = {error : "La référence de la carte n'est pas compatible avec le service de paiement"};
+        continue;
       }
     }
   
+    return result;
   }
 
   //
