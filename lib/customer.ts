@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
 import { $stripe, stripeParseError, crypto_randomToken, crypto_fingerprint, xor, unxor, 
-         KngPayment, KngPaymentAddress, KngCard, CashBalance, CreditBalance } from './payments';
+         KngPayment, KngPaymentAddress, KngCard, CashBalance, CreditBalance, dateFromExpiry } from './payments';
 import Config from './config';
 
 //
@@ -369,18 +369,34 @@ export class Customer {
       result.intent = await this.addMethodIntent();
     }
 
+    //
+    // last day of the month
+    const thisMonth = new Date();
+    thisMonth.setDate(0);
+
     for (const method of methods){
-      const id = xor(method.id);
-      const alias = xor(method.alias);
+      const id = unxor(method.id);
+      const alias = unxor(method.alias);
       if(!id || !alias) {
-        result[alias] = {error : "La référence de la carte n'est pas compatible avec le service de paiement"};
+        result[method.alias] = {error : "La méthode de paiement n'est pas compatible avec le service de paiement", code: 1};
         continue;
       }
-      result[alias] = this.findMethodByAlias(_method => _method.alias == method.alias);
-      if(!result[alias]){
-        result[alias] = {error : "La référence de la carte n'est pas compatible avec le service de paiement"};
+      const card = this.findMethodByAlias(method.alias);
+      if(!card){
+        result[method.alias] = {error : "La méthode de paiement n'existe pas", code: 2};
         continue;
       }
+      if(dateFromExpiry(card.expiry)<thisMonth) {
+        result[method.alias] = {error : "La méthode de paiement a expirée", code: 3};
+        continue;
+
+      }
+
+      result[method.alias] = {
+        issuer:card.issuer,
+        expiry:card.expiry
+      };
+
     }  
 
     return result;
@@ -391,11 +407,15 @@ export class Customer {
   // If positive, the customer has an amount owed that will be added to their next invoice. 
   // If negative, the customer has credit to apply to their next payment. 
   // Only admin user can update the available credit value
-  async allowCredit(allow:boolean) {
+  async allowCredit(allow:boolean, month?:string,year?:string) {
 
     const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
     const id = crypto_randomToken();
-
+    const mo = parseInt(month||'1');
+    if(mo<1 || mo>12 ){
+      throw new Error("Incorret month params")
+    }
+    
     let creditbalance:CreditBalance;
     if(allow) {
 
@@ -403,7 +423,7 @@ export class Customer {
         type:KngPayment.credit,
         id:xor(id),
         alias:(fingerprint),
-        expiry:'12/30',
+        expiry:(month||'12/') + (year||'2030'),
         funding:'credit',
         issuer:'invoice',
         limit:Config.option('allowMaxCredit')
@@ -492,7 +512,10 @@ export class Customer {
   async createCashBalance(month:string,year:string):Promise<CashBalance>{
     const fingerprint = crypto_fingerprint(this.id+this.uid+'cash');
     const id = crypto_randomToken();
-
+    const mo = parseInt(month);
+    if(mo<1 || mo>12 ){
+      throw new Error("Incorret month params")
+    }
     //
     // if cash balance exist, a updated one is created
 

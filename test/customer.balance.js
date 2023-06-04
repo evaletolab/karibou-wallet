@@ -21,37 +21,6 @@ describe("customer.balance", function(){
 
   const custCleanList = [];
 
-  const pm_valid = {
-    type: 'card',
-    card: {
-      number: '4242424242424242',
-      exp_month: 8,
-      exp_year: 2025,
-      cvc: '314',
-    },
-  };
-
-  const pm_trigger_auth = {
-    type: 'card',
-    card: {
-      number: '4000002500003155',
-      exp_month: 8,
-      exp_year: 2025,
-      cvc: '314',
-    },
-  };
-
-  const pm_fails = {
-    type: 'card',
-    card: {
-      number: '4000000000009995',
-      exp_month: 8,
-      exp_year: 2025,
-      cvc: '314',
-    },
-  };
-
-
   before(function(done){
     done()
   });
@@ -95,6 +64,19 @@ describe("customer.balance", function(){
     cust.allowedCredit().should.equal(true);
   });
 
+
+  it("check payments methods ", async function() {
+    const cust = await customer.Customer.get(custCleanList[0]);
+    const checks = await cust.checkMethods();
+    cust.methods.forEach(method => {
+      should.exist(checks[method.alias]);
+      should.exist(checks[method.alias].expiry);
+      checks[method.alias].expiry.should.equal(method.expiry);
+    })
+    checks.intent.should.equal(false);
+  });
+
+    
 
   it("Add max credit throw an exception", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);

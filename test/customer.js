@@ -223,8 +223,6 @@ describe("customer", function(){
   it("Add payments methods using other currency", async function() {
 
     const cust = await customer.Customer.get(custCleanList[0]);
-    const pm_update = Object.assign({},pm_valid);
-    pm_update.card.exp_year = 2026;
     const payment = await cust.addMethod('pm_card_fr');
     payment.country.should.equal('FR')
   });
@@ -237,6 +235,20 @@ describe("customer", function(){
     dateFromExpiry(cashbalance.expiry).getMonth().should.equal(5);
 
   });
+
+
+  it("check payments methods ", async function() {
+    const cust = await customer.Customer.get(custCleanList[0]);
+    const checks = await cust.checkMethods();
+    cust.methods.forEach(method => {
+      should.exist(checks[method.alias]);
+      should.exist(checks[method.alias].expiry);
+      checks[method.alias].expiry.should.equal(method.expiry);
+    })
+    checks.intent.should.equal(false);
+  });
+
+  
 
   it("Update cashbalance payments method ", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);
