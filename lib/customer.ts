@@ -219,12 +219,16 @@ export class Customer {
   * @returns a Customer instance with all private data in memory
   */
   static async get(id) {
-    const cached = Customer.lookup(id) as Customer;
-    if(cached){
-      return cached;
+    if(typeof id == 'string') {
+      const cached = Customer.lookup(id) as Customer;
+      if(cached){
+        return cached;
+      }  
     }
 
     try{
+      //
+      // safe mock for basics testing
       const stripeMock = (Config.option('sandbox') && id.stripeMock);
       const stripe = stripeMock || (await $stripe.customers.retrieve(id,{expand: ['cash_balance']})) as any;
       const customer = new Customer(
@@ -235,7 +239,9 @@ export class Customer {
         stripe.balance,
         stripe.metadata
       ); 
-      await customer.listMethods();
+      if(!stripeMock){
+        await customer.listMethods();
+      }
       return customer;
     }catch(err) {
       throw parseError(err);

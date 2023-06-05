@@ -31,15 +31,6 @@ describe("customer", function(){
     },
   };
 
-  const pm_trigger_auth = {
-    type: 'card',
-    card: {
-      number: '4000002500003155',
-      exp_month: 8,
-      exp_year: 2025,
-      cvc: '314',
-    },
-  };
 
   const pm_fails = {
     type: 'card',
@@ -51,6 +42,26 @@ describe("customer", function(){
     },
   };
 
+
+  stripeMock = {
+    id: 'cus_O1',
+    balance: 0,
+    cash_balance: {
+      object: 'cash_balance',
+      available: null,
+      customer: 'cus_O1PweTxGroRK2Y',
+      livemode: false,
+      settings: { reconciliation_mode: 'automatic', using_merchant_default: true }
+    },
+    description: 'Foo Bar id:1234',
+    email: 'test@email.com',
+    metadata: { fname: 'Foo', lname: 'Bar', uid: '1234' },
+    name: 'Foo Bar',
+    next_invoice_sequence: 1,
+    phone: '022345',
+    preferred_locales: [],
+    shipping: null,
+  };
 
   before(function(done){
     done()
@@ -111,6 +122,22 @@ describe("customer", function(){
     should.exist(cust.cashbalance);
     should.not.exist(cust.cashbalance.available);
   });
+
+  it("Get customer from  mock", async function() {
+    stripeMock.id = "cus_1";
+    stripeMock.metadata.uid="1";
+
+    const cust = await customer.Customer.get({stripeMock});
+    should.exist(cust);
+    cust.should.property('addMethod');
+    cust.id.should.equal('cus_1');
+    cust.uid.should.equal('1');
+    cust.name.familyName.should.equal("Foo");
+    cust.name.givenName.should.equal("Bar");
+
+  });
+
+
 
   it("Get customer with id", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);
