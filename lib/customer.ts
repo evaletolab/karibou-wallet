@@ -2,7 +2,7 @@ import { strict as assert } from 'assert';
 import Stripe from 'stripe';
 import { $stripe, stripeParseError, crypto_randomToken, crypto_fingerprint, xor, unxor, 
          KngPayment, KngPaymentAddress, KngCard, CashBalance, CreditBalance, dateFromExpiry } from './payments';
-import Config from './config';
+import Config, { nonEnumerableProperties } from './config';
 
 //
 // using memory cache limited to 1000 customer in same time for 4h
@@ -61,7 +61,12 @@ export class Customer {
 
     //
     // put this new customer in cache 4h
-    cache.set(this._uid,this);
+    cache.set(this._uid,this._id);
+    cache.set(this._id,this);
+
+    //
+    // secure this content from serialization
+    nonEnumerableProperties(this);
   }
 
   //
@@ -176,10 +181,16 @@ export class Customer {
   * @returns a Customer instance from LRU-cache
   */
    static lookup(kuid) {
-    let sid = cache.get(kuid+'') as Customer;
-    if(sid) {
-      return sid;
+    //
+    // lookup for karibou.ch customer
+    let customer = cache.get(kuid+'') as Customer;
+    if(customer && customer.id) {
+      return customer;
     }
+    //
+    // lookup for stripe customer
+    return cache.get(customer) as Customer;
+    
 
     // const customer = await $stripe.customers.search({
     //   query: "metadata['uid']:'"+kuid+"'", limit:1
@@ -199,7 +210,7 @@ export class Customer {
     //   stripe.metadata
     // ); 
     // cache.set(kuid,sid);
-    return sid;
+    // return sid;
    }
 
 
@@ -208,8 +219,14 @@ export class Customer {
   * @returns a Customer instance with all private data in memory
   */
   static async get(id) {
+    const cached = Customer.lookup(id) as Customer;
+    if(cached){
+      return cached;
+    }
+
     try{
-      const stripe = await $stripe.customers.retrieve(id,{expand: ['cash_balance']}) as any;
+      const stripeMock = (Config.option('sandbox') && id.stripeMock);
+      const stripe = stripeMock || (await $stripe.customers.retrieve(id,{expand: ['cash_balance']})) as any;
       const customer = new Customer(
         stripe.id,
         stripe.email,
@@ -236,7 +253,7 @@ export class Customer {
       this._metadata[address.id] = JSON.stringify(address,null,0);
       const customer = await $stripe.customers.update(
         this._id,
-        {metadata: this._metadata}
+        {metadata: this._metadata, expand: ['cash_balance']}
       );
       
       this._metadata = customer.metadata;
@@ -244,7 +261,8 @@ export class Customer {
 
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this);
+      cache.set(this._uid,this._id);
+      cache.set(this._id,this);
     }catch(err) {
       throw parseError(err);
     }     
@@ -260,14 +278,15 @@ export class Customer {
       this._metadata[address.id] = null;
       const customer = await $stripe.customers.update(
         this._id,
-        {metadata: this._metadata}
+        {metadata: this._metadata, expand: ['cash_balance']}
       );
       
       this._metadata = customer.metadata;
       this._addresses = parseAddress(customer.metadata); 
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this);
+      cache.set(this._uid,this._id);
+      cache.set(this._id,this);
 
     }catch(err) {
       throw parseError(err);
@@ -284,14 +303,15 @@ export class Customer {
       this._metadata[address.id] = JSON.stringify(address,null,0);
       const customer = await $stripe.customers.update(
         this._id,
-        {metadata: this._metadata}
+        {metadata: this._metadata, expand: ['cash_balance']}
       );
       
       this._metadata = customer.metadata;
       this._addresses = parseAddress(customer.metadata);  
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this);
+      cache.set(this._uid,this._id);
+      cache.set(this._id,this);
 
     }catch(err) {
       throw parseError(err);
@@ -332,17 +352,20 @@ export class Customer {
 
       //
       // replace payment method if old one already exist (update like)
-      const exist = this._sources.find(method => card.alias == method.alias )
-      if(exist) {
+      const exist = this._sources.findIndex(method => card.alias == method.alias )
+      if(exist>-1) {
         //
         // FIXME cannot remove payment used by an active subscription
-        await $stripe.paymentMethods.detach(unxor(exist.id));        
+        await $stripe.paymentMethods.detach(unxor(this._sources[exist].id));
+        this._sources[exist] = card;
+      } else {
+        this._sources.push(card);
       }
-      this._sources.push(card);
 
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this);
+      cache.set(this._uid,this._id);
+      cache.set(this._id,this);
 
       return card;
     }catch(err) {
@@ -454,7 +477,8 @@ export class Customer {
 
     //
     // put this new customer in cache 4h
-    cache.set(this._uid,this);
+    cache.set(this._uid,this._id);
+    cache.set(this._id,this);
 
     //
     // return credit card when it exist
@@ -501,7 +525,8 @@ export class Customer {
 
     //
     // put this new customer in cache 4h
-    cache.set(this._uid,this);
+    cache.set(this._uid,this._id);
+    cache.set(this._id,this);
 
   }
   //
@@ -532,8 +557,6 @@ export class Customer {
       issuer:'cash'
     }
 
-
-
     //
     // expose Cash Balance to this customer
     this._metadata['cashbalance'] = JSON.stringify(cashbalance,null,0);
@@ -545,11 +568,18 @@ export class Customer {
     this._cashbalance = customer.cash_balance ||{};
     this._metadata = customer.metadata;
     this._addresses = parseAddress(customer.metadata);  
-    this._sources.push(cashbalance);
+
+    const index = this._sources.findIndex(card => card.alias == (cashbalance.alias));;
+    if(index>-1){
+      this._sources[index]=cashbalance;
+    }else{
+      this._sources.push(cashbalance);
+    }
 
     //
     // put this new customer in cache 4h
-    cache.set(this._uid,this);
+    cache.set(this._uid,this._id);
+    cache.set(this._id,this);
 
     return cashbalance;
   }
@@ -602,11 +632,13 @@ export class Customer {
         this._sources.push(payment);        
       }
 
-      return this._sources.slice();
-
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this);
+      cache.set(this._uid,this._id);
+      cache.set(this._id,this);
+
+      return this._sources.slice();
+
 
     }catch(err){
       throw parseError(err);
@@ -652,6 +684,12 @@ export class Customer {
           this._id,
           {metadata: this._metadata}
         );
+        this._sources.splice(index, 1);
+        //
+        // put this new customer in cache 4h
+        cache.set(this._uid,this._id);
+        cache.set(this._id,this);
+        return;
       }
 
       //
@@ -666,7 +704,8 @@ export class Customer {
         this._sources.splice(index, 1);
         //
         // put this new customer in cache 4h
-        cache.set(this._uid,this);
+        cache.set(this._uid,this._id);
+        cache.set(this._id,this);
         return;
       }
   
@@ -691,7 +730,8 @@ export class Customer {
 
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this);
+      cache.set(this._uid,this._id);
+      cache.set(this._id,this);
     }catch(err) {
       throw (parseError(err));
     }

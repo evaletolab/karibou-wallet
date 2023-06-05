@@ -125,7 +125,8 @@ describe("customer", function(){
   });
 
   it("Get customer with karibou id", async function() {
-    const cust = await customer.Customer.lookup(1234);
+    const dest = await customer.Customer.lookup(1234);
+    const cust = await customer.Customer.lookup(dest.id);
     should.exist(cust);
     cust.should.property('addMethod');
     cust.email.should.equal("test@email.com");
@@ -265,12 +266,13 @@ describe("customer", function(){
     const cashbalance = cust.findMethodByAlias(alias);
     cashbalance.issuer.should.equal('cash');
     cashbalance.funding.should.equal('debit');
+
   });
 
   it("List cash balance bank transfer ", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);
     const tx = await cust.listBankTransfer();
-    console.log('--- DBG tx',tx)
+    // console.log('--- DBG tx',tx)
   });
 
   

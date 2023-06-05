@@ -3,8 +3,15 @@
 * Copyright (c)2014, by Olivier Evalet <evaleto@gmail.com>
 * Licensed under GPL license (see LICENSE)
 */
-import { existsSync } from 'fs';
-import { dirname } from 'path';
+
+
+
+export function nonEnumerableProperties(instance){
+  Object.keys(instance).forEach(key => {
+      if(key[0] === '_')
+          Object.defineProperty(instance, key, { enumerable: false })
+  })
+}
 
 
 export default class Config {
@@ -15,6 +22,7 @@ export default class Config {
 
     Object.keys(opts).forEach(function(key) {
       Config.option(key, opts[key]);
+      Object.defineProperty(Config.settings, key, { enumerable: false });
     });
 
     Config.settings.isConfigured = true;
