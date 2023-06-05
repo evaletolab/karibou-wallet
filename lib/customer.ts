@@ -49,7 +49,7 @@ export class Customer {
     this._phone = phone;
     this._fname = metadata.fname;
     this._lname = metadata.lname;
-    this._uid = metadata.uid;
+    this._uid = metadata.uid+'';
     this._id = id;
     this._metadata = metadata;
     this._cashbalance = cashbalance||{};

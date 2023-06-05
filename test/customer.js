@@ -123,7 +123,7 @@ describe("customer", function(){
     should.not.exist(cust.cashbalance.available);
   });
 
-  it("Get customer from  mock", async function() {
+  it("Get customer from Mock", async function() {
     stripeMock.id = "cus_1";
     stripeMock.metadata.uid="1";
 
@@ -135,6 +135,11 @@ describe("customer", function(){
     cust.name.familyName.should.equal("Foo");
     cust.name.givenName.should.equal("Bar");
 
+    
+    const lookup = customer.Customer.lookup(1);
+    lookup.should.property('addMethod');
+    lookup.id.should.equal('cus_1');
+    lookup.uid.should.equal('1');
   });
 
 
