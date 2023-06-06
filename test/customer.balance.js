@@ -61,6 +61,7 @@ describe("customer.balance", function(){
     const cust = await customer.Customer.get(custCleanList[0]);
     await cust.allowCredit(true);
     should.exist(cust);
+    cust.methods.some(method => method.issuer == 'invoice').should.equal(true);
     cust.allowedCredit().should.equal(true);
   });
 

@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import Stripe from 'stripe';
 import { $stripe, stripeParseError, crypto_randomToken, crypto_fingerprint, xor, unxor, 
-         KngPayment, KngPaymentAddress, KngCard, CashBalance, CreditBalance, dateFromExpiry } from './payments';
+         KngPayment, KngPaymentAddress, KngCard, CashBalance, CreditBalance, dateFromExpiry, parseYear } from './payments';
 import Config, { nonEnumerableProperties } from './config';
 
 //
@@ -447,12 +447,12 @@ export class Customer {
     
     let creditbalance:CreditBalance;
     if(allow) {
-
+      year = parseYear((year||'2030')+'')
       creditbalance = {
         type:KngPayment.credit,
         id:xor(id),
         alias:(fingerprint),
-        expiry:(month||'12/') + (year||'2030'),
+        expiry:(month||'12') +'/'+ (year),
         funding:'credit',
         issuer:'invoice',
         limit:Config.option('allowMaxCredit')
@@ -466,7 +466,9 @@ export class Customer {
   
       //
       // this is the signature of an credit authorization
-      this._metadata['allowCredit'] = fingerprint;  
+      this._sources.push(creditbalance);
+
+
     }else {
       this._metadata['allowCredit'] = null;
       this._metadata['creditbalance'] = null;
@@ -496,10 +498,6 @@ export class Customer {
   // add credit to a customer
   // FIXME: balance is completly unsecure 
   async updateCredit(amount:number) {
-    // const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
-    // if(this._metadata['allowCredit'] != fingerprint) {
-    //   throw new Error("Credit is not allowed for your account");
-    // }  
 
     //
     // max negative credit verification
@@ -507,6 +505,15 @@ export class Customer {
       if(!this.allowedCredit()){
         throw new Error("Credit must be a positive number");
       }
+
+      //
+      // check validity
+      const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
+      const check = await this.checkMethods(false);
+      if(check[fingerprint].error) {
+        throw new Error(check[fingerprint].error);
+      }
+
       const maxcredit = Config.option('allowMaxCredit')/100;    
       if((this.balance + amount)<(-maxcredit)) {
         throw new Error("Negative credit exceed limitation of "+maxcredit);
@@ -751,7 +758,8 @@ export class Customer {
     //
     // this is the signature of an credit authorization
     const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
-    return this._metadata['allowCredit'] == fingerprint;
+
+    return this.methods.some(method => method.alias == fingerprint);
   }
 
   findMethodByID(id) {
