@@ -73,15 +73,9 @@ export  class  Transaction {
 
     const status = {
       "processing":"pending",
-      "requires_action":"requires_action",
-      "requires_capture":"authorized",
-      "succeeded":"paid",
-      "canceled":"canceled",
-      "refunded":"refunded",
-      "invoice":"invoice",
-      "invoice_paid":"invoice_paid"      
+      "succeeded":"paid"
     }
-    return (this._payment.metadata.exended_status || this._payment.status) as KngPaymentStatus;
+    return (this._payment.metadata.exended_status || status[this._payment.status] ||this._payment.status) as KngPaymentStatus;
   }
 
   get client_secret():string{
@@ -132,7 +126,7 @@ export  class  Transaction {
     return ["requires_capture","authorized","prepaid","invoice","invoice_paid"].includes(this.status);
   }
   get captured():boolean{
-    return ["succeeded","paid","invoice","refunded"].includes(this.status);
+    return ["succeeded","paid","invoice","invoice_paid","refunded","partially_refunded","manually_refunded"].includes(this.status);
   }
   get canceled():boolean{
     return this.status == "canceled" as KngPaymentStatus;
@@ -156,9 +150,11 @@ export  class  Transaction {
 
   get report(){
     const now = new Date();
+    const amount = ["refunded","partially_refunded","manually_refunded"].includes(this.status)? this.refunded:this.amount;
     return {
-      log: this.status + ' ' + (this.amount) + ' ' + this.currency + ' the '+ now.toDateString(),
+      log: this.status + ' ' + (amount) + ' ' + this.currency + ' the '+ now.toDateString(),
       transaction:(this.id),
+      status:this.status,
       amount: this.amount,
       refunded: this.refunded,
       customer_credit:this.customerCredit,
@@ -311,21 +307,21 @@ export  class  Transaction {
   * Get transaction object from stored karibou order 
   * @returns {Transaction} 
   */
-   static async fromOrder(order:KngOrderPayment) {
+   static async fromOrder(payment:KngOrderPayment) {
     try{
-      if(!order.transaction) throw new Error("");
-      switch (order.issuer) {
+      if(!payment.transaction) throw new Error("");
+      switch (payment.issuer) {
         case "stripe":
-        return await Transaction.get(order.transaction);
+        return await Transaction.get(payment.transaction);
         case "invoice":
         //
         // FIXME backport decodeAlias from the old api 
-          const tx=unxor(order.transaction.split('kng_')[1]).split('::');
+          const tx=unxor(payment.transaction.split('kng_')[1]).split('::');
           const oid = tx[0];
-          const amount = parseInt(tx[1]);
-          const refund = tx[2];
+          const amount = parseFloat(tx[1]);
+          const refund = parseFloat(tx[2]);
           const customer_id = tx[3];
-          const transaction:KngPaymentInvoice = createOrderPayment(customer_id,amount,refund,order.status,oid);
+          const transaction:KngPaymentInvoice = createOrderPayment(customer_id,amount,refund,payment.status,oid);
 
         return new Transaction(transaction);    
       } 
@@ -428,7 +424,8 @@ export  class  Transaction {
         }
         //
         // compute the amount that should be restored on customer account
-        const refundAmount = this.amount-(normAmount/100);
+        // FIXME missing test with error when auth 46.3, capture 40 and refund 6.3
+        const refundAmount = Math.round(this.amount*100-normAmount)/100;
         const customer = await Customer.get(this.customer);
         await customer.updateCredit(refundAmount);
 
@@ -665,7 +662,7 @@ function createOrderPayment(customer_id,amount,refund,status,oid) {
     customer:customer_id,
     description:"#"+oid,
     metadata: {order:oid,refund:refund},
-    id:'kng_'+xor(oid+'::'+(amount|0)+'::'+(refund||0)+'::'+customer_id),
+    id:'kng_'+xor(oid+'::'+(amount)+'::'+(refund||0)+'::'+customer_id),
     payment_method:'invoice',
     status:status,
     transfer_group:"#"+oid

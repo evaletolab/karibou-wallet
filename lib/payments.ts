@@ -118,6 +118,7 @@ export const $stripe = new Stripe(Config.option('stripePrivatekey'), {
 
 
 // Helper to parse Year
+// FIXME Payments.parseYear must be tested
 export const parseYear = function(year) {
   if (!year) { return; }
   let yearVal;
