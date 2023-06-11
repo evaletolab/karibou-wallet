@@ -33,7 +33,7 @@ describe("config", function(){
     
     //config.option('enabled').should.equal(true);
     config.option('debug').should.equal(true);
-    config.option('sandbox').should.equal(false);
+    config.option('sandbox').should.equal(true);
     config.option('allowedCurrencies').should.not.be.empty;
     config.option('allowedCurrencies').should.containEql('CHF');
     config.option('allowMultipleSetOption').should.equal(true);

@@ -213,7 +213,7 @@ export  class  Transaction {
       const params={
         amount:amount_capturable,
         currency: "CHF",
-        customer:customer.id,
+        customer:unxor(customer.id),
         transfer_group: tx_group,
         off_session: false,
         capture_method:'manual', // capture amount offline (server side)
@@ -309,10 +309,18 @@ export  class  Transaction {
   */
    static async fromOrder(payment:KngOrderPayment) {
     try{
-      if(!payment.transaction) throw new Error("");
+      if(!payment.transaction) throw new Error("Man WTF!");
+      //
+      // FIXME issuer should be an KngPaymentIssuer
       switch (payment.issuer) {
-        case "stripe":
+        case "american express":
+        case "amex":          
+        case "visa":
+        case "mc":
+        case "mastercard":
         return await Transaction.get(payment.transaction);
+        case "cash":
+        case "balance":
         case "invoice":
         //
         // FIXME backport decodeAlias from the old api 
@@ -521,7 +529,7 @@ export  class  Transaction {
 
     try{
       // keep stripe id in scope
-      const stripe_id = this.id;
+      const stripe_id = this._payment.id;
 
       // credit amount already paid with this transaction      
       const customer_credit = parseInt(this._payment.metadata.customer_credit||"0") / 100;

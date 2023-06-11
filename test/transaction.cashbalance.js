@@ -11,9 +11,8 @@
  const payments = require("../dist/payments").KngPayment;
  const transaction = require("../dist/transaction");
  const $stripe = require("../dist/payments").$stripe;
+ const unxor = require("../dist/payments").unxor;
  const should = require('should');
- const axios = require('axios');
-const { default: Config } = require("../dist/config");
 
 
 describe("Class transaction with cashbalance", function(){
@@ -77,7 +76,7 @@ describe("Class transaction with cashbalance", function(){
         return;
       }
       const transfer = await $stripe.testHelpers.customers.fundCashBalance(
-        defaultCustomer.id,
+        unxor(defaultCustomer.id),
         {amount, currency: 'eur'}
       );      
       defaultTXtoRefund = transfer.id

@@ -9,9 +9,7 @@ config.configure(options.payment);
 
 const customer = require("../dist/customer");
 const payments = require("../dist/payments").Payment;
-const crypto_fingerprint = require("../dist/payments").crypto_fingerprint;
-const xor = require("../dist/payments").xor;
-const dateFromExpiry = require("../dist/payments").dateFromExpiry;
+const unxor = require("../dist/payments").unxor;
 const $stripe = require("../dist/payments").$stripe;
 const should = require('should');
 
@@ -27,7 +25,7 @@ describe("customer.balance", function(){
 
   after(async function () {    
     for (let cust of custCleanList) {
-      await $stripe.customers.del(cust);
+      await $stripe.customers.del(unxor(cust));
     }
   });
 

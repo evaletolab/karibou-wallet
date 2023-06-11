@@ -11,6 +11,7 @@ const customer = require("../dist/customer");
 const payments = require("../dist/payments").Payment;
 const crypto_fingerprint = require("../dist/payments").crypto_fingerprint;
 const xor = require("../dist/payments").xor;
+const unxor = require("../dist/payments").unxor;
 const dateFromExpiry = require("../dist/payments").dateFromExpiry;
 const $stripe = require("../dist/payments").$stripe;
 const should = require('should');
@@ -69,7 +70,7 @@ describe("customer", function(){
 
   after(async function () {    
     for (let cust of custCleanList) {
-      await $stripe.customers.del(cust);
+      await $stripe.customers.del(unxor(cust));
     }
   });
 
@@ -111,7 +112,7 @@ describe("customer", function(){
   it("Construction of the customer", async function() {
     const cust = await customer.Customer.create("test@email.com","Foo","Bar","022345",1234);
     should.exist(cust);
-    custCleanList.push(cust.id);
+    custCleanList.push((cust.id));
     cust.should.property('addMethod');
     cust.email.should.equal("test@email.com");
     cust.uid.should.equal('1234');
@@ -121,25 +122,32 @@ describe("customer", function(){
     cust.name.givenName.should.equal("Bar");
     should.exist(cust.cashbalance);
     should.not.exist(cust.cashbalance.available);
+
+    const lookup = customer.Customer.lookup('1234');
+    should.exist(lookup);
+    should.exist(lookup.id);
+    lookup.id.should.equal(cust.id);
+
   });
 
   it("Get customer from Mock", async function() {
-    stripeMock.id = "cus_1";
-    stripeMock.metadata.uid="1";
+    stripeMock.id = "cus_01";
+    stripeMock.metadata.uid="01";
 
     const cust = await customer.Customer.get({stripeMock});
     should.exist(cust);
     cust.should.property('addMethod');
-    cust.id.should.equal('cus_1');
-    cust.uid.should.equal('1');
+    unxor(cust.id).should.equal('cus_01');
+    cust.uid.should.equal('01');
     cust.name.familyName.should.equal("Foo");
     cust.name.givenName.should.equal("Bar");
 
     
-    const lookup = customer.Customer.lookup(1);
+    const lookup = customer.Customer.lookup('01');
+    should.exist(lookup);
     lookup.should.property('addMethod');
-    lookup.id.should.equal('cus_1');
-    lookup.uid.should.equal('1');
+    unxor(lookup.id).should.equal('cus_01');
+    lookup.uid.should.equal('01');
   });
 
 
@@ -230,6 +238,8 @@ describe("customer", function(){
 
     const payment = await cust.addMethod(pm.id);
 
+    should.exist(payment)
+    should.exist(payment.fingerprint)
 
     payment.alias.should.equal(xor(pm.card.fingerprint))
     payment.id.should.equal(xor(pm.id))
@@ -237,8 +247,8 @@ describe("customer", function(){
     payment.last4.should.equal('4242')
     payment.issuer.should.equal('visa')
     payment.funding.should.equal('credit')
-    should.exist(payment.fingerprint)
     payment.expiry.should.equal('8/2025')
+    payment.issuer.should.equal('visa')
 
   });
 
@@ -250,6 +260,7 @@ describe("customer", function(){
     const pm = await $stripe.paymentMethods.create(pm_update);
     const payment = await cust.addMethod(pm.id);
     payment.expiry.should.equal('8/2026')
+    payment.issuer.should.equal('visa')
 
   });
 
@@ -391,7 +402,7 @@ describe("customer", function(){
 
   it("Remove cahsbalance payment's method", async function() {
     const cust = await customer.Customer.get(custCleanList[0]);    
-    const alias = (crypto_fingerprint(cust.id+cust.uid+'cash'));
+    const alias = (crypto_fingerprint((cust.id)+cust.uid+'cash'));
     const card = cust.findMethodByAlias(alias);
     await cust.removeMethod(card);
     should.not.exist(cust.findMethodByAlias(alias));

@@ -10,8 +10,20 @@ export enum KngPayment {
   balance,
   credit,
   bitcoin  
-}
+};
 
+export enum KngPaymentIssuer {
+ "american express" = "american express",
+	visa = "visa",
+	mastercard = "mastercard",
+	mc = "mc",
+	paypal = "paypal",
+	invoice = "invoice",
+	cash = "cash",
+	balance = "balance",
+	bitcoin = "bitcoin",
+	amex = "amex"	
+};
 
 
 
@@ -77,7 +89,6 @@ export interface KngPaymentAddress {
   lng:number;
 }
 
-
 export interface KngPaymentSource {
   type:KngPayment;
   id:string;
@@ -115,6 +126,15 @@ export const $stripe = new Stripe(Config.option('stripePrivatekey'), {
   apiVersion: Config.option('stripeApiVersion'),
   maxNetworkRetries: 2
 });
+
+
+export const round5cts=function (value) {
+	return parseFloat((Math.round(value*20)/20).toFixed(2))
+}
+
+export const round1cts=function (value) {
+	return parseFloat((Math.round(value*100)/100).toFixed(2))
+}
 
 
 // Helper to parse Year
@@ -191,6 +211,7 @@ export const xor = function(text:string, pkey?:string) :string {
 
 export const unxor = function(hex:string, pkey?:string) :string {   
   pkey = pkey || Config.option('shaSecret');
+	hex = (typeof hex == 'string')? hex: "00";
   const data = Uint8Array.from(hex.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
   const key = Uint8Array.from(Array.from(pkey).map(char => char.charCodeAt(0)));
   const uint8 = data.map((digit, i) => {
@@ -359,31 +380,43 @@ export function stripeParseError(err) {
 
 export const card_mastercard_prepaid = {
 	type:KngPayment.card,
+	issuer:'visa',
+	alias: xor('pm_card_visa'),
 	id: xor('pm_card_mastercard_prepaid')
 } as KngCard;
 
 export const card_authenticationRequired = {
 	type:KngPayment.card,
+	issuer:'visa',
+	alias: xor('pm_card_visa'),
 	id: xor('pm_card_authenticationRequired')
 } as KngCard;
 
 export const card_visa_chargeDeclined = {
 	type:KngPayment.card,
+	issuer:'visa',
+	alias: xor('pm_card_visa'),
 	id: xor('pm_card_visa_chargeDeclined')
 } as KngCard;
 
 export const card_visa_chargeDeclinedLostCard = {
 	type:KngPayment.card,
+	issuer:'visa',
+	alias: xor('pm_card_visa'),
 	id: xor('pm_card_visa_chargeDeclinedLostCard')
 } as KngCard;
 
 export const card_chargeDeclinedProcessingError = {
 	type:KngPayment.card,
+	issuer:'visa',
+	alias: xor('pm_card_visa'),
 	id: xor('pm_card_chargeDeclinedProcessingError')
 } as KngCard;
 
 export const default_card_invoice = {
 	type:KngPayment.credit,
+	issuer:'invoice',
+	alias: xor('pm_card_visa'),
 	id: xor('pm_card_invoice')
 } as KngCard;
 

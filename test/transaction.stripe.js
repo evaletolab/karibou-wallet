@@ -42,7 +42,7 @@ describe("Class transaction.stripe", function(){
   });
 
   after(async function () {
-    await $stripe.customers.del(defaultCustomer.id);
+    await $stripe.customers.del(unxor(defaultCustomer.id));
   });
   it("Create list of cards for testing transaction", async function(){
     config.option('debug',false);
@@ -248,7 +248,7 @@ describe("Class transaction.stripe", function(){
     const orderPayment = {
       status:defaultTX.status,
       transaction:defaultTX.id,
-      issuer:defaultTX.provider
+      issuer:'mastercard'
     }
     const tx = await transaction.Transaction.fromOrder(orderPayment);
     tx.provider.should.equal("stripe");
@@ -257,5 +257,12 @@ describe("Class transaction.stripe", function(){
 
   });
 
+  it("Transaction create and cancel", async function() {
+
+    // load card from default customer
+    const card = defaultCustomer.findMethodByAlias(defaultPaymentAlias);
+    const tx = await transaction.Transaction.authorize(defaultCustomer,card,2,paymentOpts)
+    await tx.cancel();
+  });
 
 });

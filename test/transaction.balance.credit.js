@@ -9,13 +9,11 @@ config.configure(options.payment);
 
 const customer = require("../dist/customer");
 const unxor = require("../dist/payments").unxor;
-const card_mastercard_prepaid = require("../dist/payments").card_mastercard_prepaid;
 const default_card_invoice = require("../dist/payments").default_card_invoice;
 const transaction = require("../dist/transaction");
 const $stripe = require("../dist/payments").$stripe;
 const should = require('should');
 const axios = require('axios');
-const { default: Config } = require("../dist/config");
 
 
 describe("Class transaction with negative customer credit", function(){
@@ -41,7 +39,7 @@ describe("Class transaction with negative customer credit", function(){
   });
 
   after(async function () {
-    await $stripe.customers.del(defaultCustomer.id);
+    await $stripe.customers.del(unxor(defaultCustomer.id));
   });
 
   it("Create customer with credit balance", async function(){

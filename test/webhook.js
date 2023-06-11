@@ -49,7 +49,7 @@ describe("Class subscription", function(){
   });
 
   after(async function () {
-    await $stripe.customers.del(defaultCustomer.id);
+    await $stripe.customers.del(unxor(defaultCustomer.id));
     //await $stripe.subscriptions.del(defaultSub.id);
   });
 

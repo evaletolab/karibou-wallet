@@ -203,7 +203,8 @@ export class SubscriptionContract {
   //
   // Update current contract with the new customer payment method 
   async updatePaymentMethod(card:KngCard) {
-    this._subscription = await $stripe.subscriptions.update(this.id, {
+    this._subscription = await $stripe.subscriptions.update(
+      this._subscription.id, {
       default_payment_method: unxor(card.id)
     });    
     return this;
@@ -255,7 +256,7 @@ export class SubscriptionContract {
     // - pending_if_incomplete is used when update existing subscription
     // - allow_incomplete accept subscript delegate the payment in external process
     const options = {
-      customer: customer.id,
+      customer: unxor(customer.id),
       payment_behavior:'allow_incomplete',
       default_payment_method:unxor(card.id),
       off_session:true,
@@ -309,7 +310,7 @@ export class SubscriptionContract {
 
     // constraint subscription by date {created: {gt: Date.now()}}
     const subscriptions:Stripe.ApiList<Stripe.Subscription> = await $stripe.subscriptions.list({
-      customer:customer.id
+      customer:unxor(customer.id)
     });
 
     //

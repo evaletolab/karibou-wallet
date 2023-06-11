@@ -42,7 +42,7 @@ describe("Class transaction with credit.balance", function(){
   });
 
   after(async function () {
-    await $stripe.customers.del(defaultCustomer.id);
+    await $stripe.customers.del(unxor(defaultCustomer.id));
   });
 
   it("Create customer with negative credit balance", async function(){
