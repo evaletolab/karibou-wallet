@@ -50,7 +50,7 @@ export class Customer {
     this._fname = metadata.fname;
     this._lname = metadata.lname;
     this._uid = metadata.uid+'';
-    this._id = id;
+    this._id = (id+'');
     this._metadata = metadata;
     this._cashbalance = cashbalance||{};
 
@@ -61,8 +61,8 @@ export class Customer {
 
     //
     // put this new customer in cache 4h
-    cache.set(this._uid,this._id);
-    cache.set(this._id,this);
+    cache.set(this._uid,this.id);
+    cache.set(this.id,this);
 
     //
     // secure this content from serialization
@@ -72,7 +72,7 @@ export class Customer {
   //
   // Stripe id must be stable over time, this why we dont use xor(_id)
   get id() {
-    return (this._id);
+    return xor(this._id);
   }
   
   get email() {
@@ -154,7 +154,7 @@ export class Customer {
   */
   static async create(email:string, fname:string, lname:string, phone: string, uid:string) {
     try{
-      const customer = await $stripe.customers.create({
+      const stripe = await $stripe.customers.create({
         description: fname + ' ' + lname + ' id:'+uid,
         email: email,
         name: fname + ' ' + lname,
@@ -163,7 +163,7 @@ export class Customer {
         expand: ['cash_balance']
       });  
 
-      return new Customer(customer.id,email,phone,customer.cash_balance,0,customer.metadata); 
+      return new Customer(stripe.id,email,phone,stripe.cash_balance,0,stripe.metadata); 
     }catch(err) {
       throw parseError(err);
     } 
@@ -180,37 +180,20 @@ export class Customer {
   * ## customer.lookup() from customer in cache (should not be async)
   * @returns a Customer instance from LRU-cache
   */
-   static lookup(kuid) {
+   static lookup(uid) {
+    // stringify
+    uid=uid+'';
+
     //
-    // lookup for karibou.ch customer
-    let customer = cache.get(kuid+'') as Customer;
+    // lookup for karibou.ch as customer or pointer of customer
+    const customer = cache.get(uid)||cache.get(xor(uid));
     if(customer && customer.id) {
       return customer;
     }
+
     //
-    // lookup for stripe customer
+    // lookup verify as pointer of stripe customer
     return cache.get(customer) as Customer;
-    
-
-    // const customer = await $stripe.customers.search({
-    //   query: "metadata['uid']:'"+kuid+"'", limit:1
-    // });
-    
-    // if(!customer.data.length) {
-    //   return;
-    // }
-
-    // const stripe = customer.data[0];
-    // sid = new Customer(
-    //   stripe.id,
-    //   stripe.email,
-    //   stripe.phone,
-    //   stripe.cash_balance,
-    //   stripe.balance,
-    //   stripe.metadata
-    // ); 
-    // cache.set(kuid,sid);
-    // return sid;
    }
 
 
@@ -230,7 +213,8 @@ export class Customer {
       //
       // safe mock for basics testing
       const stripeMock = (Config.option('sandbox') && id.stripeMock);
-      const stripe = stripeMock || (await $stripe.customers.retrieve(id,{expand: ['cash_balance']})) as any;
+      const stripe_id = (id.indexOf&&id.indexOf('cus_')>-1) ? id:unxor(id);
+      const stripe = stripeMock || (await $stripe.customers.retrieve(stripe_id,{expand: ['cash_balance']})) as any;
       const customer = new Customer(
         stripe.id,
         stripe.email,
@@ -267,8 +251,8 @@ export class Customer {
 
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this._id);
-      cache.set(this._id,this);
+      cache.set(this.id,this);
+      return Object.assign({},address);
     }catch(err) {
       throw parseError(err);
     }     
@@ -291,8 +275,7 @@ export class Customer {
       this._addresses = parseAddress(customer.metadata); 
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this._id);
-      cache.set(this._id,this);
+      cache.set(this.id,this);
 
     }catch(err) {
       throw parseError(err);
@@ -316,8 +299,7 @@ export class Customer {
       this._addresses = parseAddress(customer.metadata);  
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this._id);
-      cache.set(this._id,this);
+      cache.set(this.id,this);
 
     }catch(err) {
       throw parseError(err);
@@ -370,8 +352,7 @@ export class Customer {
 
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this._id);
-      cache.set(this._id,this);
+      cache.set(this.id,this);
 
       return card;
     }catch(err) {
@@ -485,8 +466,7 @@ export class Customer {
 
     //
     // put this new customer in cache 4h
-    cache.set(this._uid,this._id);
-    cache.set(this._id,this);
+    cache.set(this.id,this);
 
     //
     // return credit card when it exist
@@ -494,54 +474,6 @@ export class Customer {
   }
 
 
-  // 
-  // add credit to a customer
-  // FIXME: balance is completly unsecure 
-  async updateCredit(amount:number) {
-
-    //
-    // max negative credit verification
-    if((this.balance + amount)<0) {
-      if(!this.allowedCredit()){
-        throw new Error("Credit must be a positive number");
-      }
-
-      //
-      // check validity
-      const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
-      const check = await this.checkMethods(false);
-      if(check[fingerprint].error) {
-        throw new Error(check[fingerprint].error);
-      }
-
-      const maxcredit = Config.option('allowMaxCredit')/100;    
-      if((this.balance + amount)<(-maxcredit)) {
-        throw new Error("Negative credit exceed limitation of "+maxcredit);
-      }
-    }
-
-    //
-    // max amount credit verification
-    const maxamount = Config.option('allowMaxAmount')/100;    
-    if((this.balance + amount)>maxamount) {
-      throw new Error("Credit exceed limitation of "+maxamount);
-    }
-
-    //
-    // update customer credit 
-    const balance = Math.round((amount+this.balance)*100);
-    const customer = await $stripe.customers.update(
-      this._id,
-      {balance}
-    );
-    this._balance = balance;
-
-    //
-    // put this new customer in cache 4h
-    cache.set(this._uid,this._id);
-    cache.set(this._id,this);
-
-  }
   //
   // A customer’s cash balance represents funds that they can use for futur payment. 
   // By default customer dosen't have access to his cash balance
@@ -591,8 +523,7 @@ export class Customer {
 
     //
     // put this new customer in cache 4h
-    cache.set(this._uid,this._id);
-    cache.set(this._id,this);
+    cache.set(this.id,this);
 
     return cashbalance;
   }
@@ -607,7 +538,7 @@ export class Customer {
       methodType: 'list',
     });
     const cashBalanceTransactions = await (<any>$stripe.customers).listCashBalanceTransactions(
-      this.id,
+      (this._id),
       {limit: 15}
     );    
 
@@ -647,9 +578,7 @@ export class Customer {
 
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this._id);
-      cache.set(this._id,this);
-
+      cache.set(this.id,this);
       return this._sources.slice();
 
 
@@ -678,7 +607,7 @@ export class Customer {
       const card_id = unxor(method.id);
 
       const subs = await $stripe.subscriptions.list({
-        customer:this.id
+        customer:this._id
       });      
 
       //
@@ -700,8 +629,7 @@ export class Customer {
         this._sources.splice(index, 1);
         //
         // put this new customer in cache 4h
-        cache.set(this._uid,this._id);
-        cache.set(this._id,this);
+        cache.set(this.id,this);
         return;
       }
 
@@ -717,8 +645,7 @@ export class Customer {
         this._sources.splice(index, 1);
         //
         // put this new customer in cache 4h
-        cache.set(this._uid,this._id);
-        cache.set(this._id,this);
+        cache.set(this.id,this);
         return;
       }
   
@@ -743,14 +670,107 @@ export class Customer {
 
       //
       // put this new customer in cache 4h
-      cache.set(this._uid,this._id);
-      cache.set(this._id,this);
+      cache.set(this.id,this);
     }catch(err) {
       throw (parseError(err));
     }
 
   }
 
+
+  // 
+  // add credit to a customer
+  // FIXME: balance is completly unsecure 
+  async updateCredit(amount:number) {
+
+    //
+    // max negative credit verification
+    if((this.balance + amount)<0) {
+      if(!this.allowedCredit()){
+        throw new Error("Credit must be a positive number");
+      }
+
+      //
+      // check validity
+      const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
+      const check = await this.checkMethods(false);
+      if(check[fingerprint].error) {
+        throw new Error(check[fingerprint].error);
+      }
+
+      const maxcredit = Config.option('allowMaxCredit')/100;    
+      if((this.balance + amount)<(-maxcredit)) {
+        throw new Error("Negative credit exceed limitation of "+maxcredit);
+      }
+    }
+
+    //
+    // max amount credit verification
+    const maxamount = Config.option('allowMaxAmount')/100;    
+    if((this.balance + amount)>maxamount) {
+      throw new Error("Credit exceed limitation of "+maxamount);
+    }
+
+    //
+    // update customer credit 
+    const balance = Math.round((amount+this.balance)*100);
+    const customer = await $stripe.customers.update(
+      this._id,
+      {balance}
+    );
+    this._balance = balance;
+
+    //
+    // put this new customer in cache 4h
+    cache.set(this.id,this);
+
+  }
+
+
+  async updateIdentity(identity) {
+    assert(identity);
+    assert(this._metadata.uid);
+    assert(this._metadata.fname);
+    assert(this._metadata.lname);
+
+    try{
+      const updated:any= {};
+      if(identity.fname){
+        this._metadata.fname = identity.fname;
+      }
+      if(identity.lname){
+        this._metadata.lname = identity.lname;
+      }
+      if(identity.email){
+        updated.email = identity.email;
+      }
+      if(identity.phone){
+        updated.phone = identity.phone;
+      }
+
+      const customer = await $stripe.customers.update(
+        this._id,
+        {metadata: this._metadata, expand: ['cash_balance']}
+      );    
+
+      this._metadata = customer.metadata;
+      this._email = customer.email;
+      this._phone = customer.phone;
+      this._fname = customer.metadata.fname;
+      this._lname = customer.metadata.lname;
+
+      //
+      // put this new customer in cache 4h
+      cache.set(this.id,this);
+      return this;
+    }catch(err) {
+      throw parseError(err);
+    }     
+  }
+  
+  //
+  // atomic methods
+  //
 
   //
   // verify if customer is allowed for credit
