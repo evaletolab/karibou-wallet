@@ -51,7 +51,7 @@ describe("customer.balance", function(){
       await cust.updateCredit(-1);      
       should.not.exist("dead zone");
     }catch(err) {
-      err.message.should.containEql('must be a positive number');
+      err.message.should.containEql('Le paiement par crédit n\'est pas disponible');
     }
   });
 
