@@ -10,6 +10,7 @@ config.configure(options.payment);
 const customer = require("../dist/customer");
 const unxor = require("../dist/payments").unxor;
 const default_card_invoice = require("../dist/payments").default_card_invoice;
+const card_mastercard_prepaid = require("../dist/payments").card_mastercard_prepaid;
 const transaction = require("../dist/transaction");
 const $stripe = require("../dist/payments").$stripe;
 const should = require('should');
@@ -42,9 +43,25 @@ describe("Class transaction with negative customer credit", function(){
     await $stripe.customers.del(unxor(defaultCustomer.id));
   });
 
-  it("Create customer with credit balance", async function(){
+  it("Create customer without credit balance", async function(){
     config.option('debug',false);
     defaultCustomer = await customer.Customer.create("test@email.com","Foo","Bar","022345",1234);
+
+  });
+
+
+  it("Transaction unauth credit throw an error", async function() {
+    try{
+      const tx = await transaction.Transaction.authorize(defaultCustomer,default_card_invoice,4,paymentOpts)
+      should.not.exist("dead zone");
+    }catch(err) {
+      err.message.should.containEql('Le paiement par crédit n\'est pas disponible')
+    }
+  });  
+
+  it("Update customer with credit balance", async function(){
+    config.option('debug',false);
+    defaultCustomer = await customer.Customer.get(defaultCustomer.id);
 
 
     // 
@@ -57,13 +74,12 @@ describe("Class transaction with negative customer credit", function(){
   });
 
 
-
   it("Transaction create with exceeded credit limit throw an error", async function() {
     try{
       const tx = await transaction.Transaction.authorize(defaultCustomer,default_card_invoice,40.1,paymentOpts)
       should.not.exist("dead zone");
     }catch(err) {
-      err.message.should.containEql('Negative credit exceed limitation')
+      err.message.should.containEql('Vous avez atteind la limite de crédit')
     }
   });  
 
@@ -272,5 +288,10 @@ describe("Class transaction with negative customer credit", function(){
   });  
   
     
+
+  it("Transaction user with credit available can create TX with his mastercard ", async function() {
+    const tx = await transaction.Transaction.authorize(defaultCustomer,card_mastercard_prepaid,40.1,paymentOpts)
+    should.exist(tx);
+  });  
 
 });

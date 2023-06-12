@@ -238,7 +238,7 @@ export  class  Transaction {
       //
       // use customer negative credit instead of KngCard
       // updateCredit manage the max negative credit
-      else if (customer.allowedCredit()) {
+      else if (card.issuer == 'invoice') {        
         await customer.updateCredit(-amount);
         // as invoice transaction
         const transaction = createOrderPayment(customer.id,amount*100,0,"authorized",options.oid);

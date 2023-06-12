@@ -63,7 +63,7 @@ describe("Class transaction with customer debit", function(){
       const tx = await transaction.Transaction.authorize(defaultCustomer,default_card_invoice,10.1,paymentOpts)
       should.not.exist("dead zone");
     }catch(err) {
-      err.message.should.containEql('balance is insufficient to complete the payment')
+      err.message.should.containEql('Le paiement par crédit n\'est pas disponible')
     }
   });  
 

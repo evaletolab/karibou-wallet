@@ -69,7 +69,7 @@ describe("Class transaction with credit.balance", function(){
       const tx = await transaction.Transaction.authorize(defaultCustomer,default_card_invoice,40.1,paymentOpts)
       should.not.exist("dead zone");
     }catch(err) {
-      err.message.should.containEql('Negative credit exceed limitation')
+      err.message.should.containEql('Vous avez atteind la limite de crédit de votre compte')
     }
   });  
   

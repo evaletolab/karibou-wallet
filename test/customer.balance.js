@@ -114,7 +114,7 @@ describe("customer.balance", function(){
       await cust.updateCredit(-80.1);      
       should.not.exist("dead zone");
     }catch(err) {
-      err.message.should.containEql('Negative credit exceed limitation');
+      err.message.should.containEql('Vous avez atteind la limite de crédit de votre compte');
     }
   });
 

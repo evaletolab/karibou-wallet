@@ -687,7 +687,7 @@ export class Customer {
     // max negative credit verification
     if((this.balance + amount)<0) {
       if(!this.allowedCredit()){
-        throw new Error("Credit must be a positive number");
+        throw new Error("Le paiement par crédit n'est pas disponible");
       }
 
       //
@@ -700,7 +700,7 @@ export class Customer {
 
       const maxcredit = Config.option('allowMaxCredit')/100;    
       if((this.balance + amount)<(-maxcredit)) {
-        throw new Error("Negative credit exceed limitation of "+maxcredit);
+        throw new Error("Vous avez atteind la limite de crédit de votre compte"+maxcredit);
       }
     }
 
