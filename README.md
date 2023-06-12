@@ -5,17 +5,22 @@
 ## Main usage
 
 The purpose of this project is to provide a simple and intuitive API to handle a simple Wallet manager for our karibou.ch marketplace. It has bean designed to work on server side and it's usefull for,
-* Stripe payment (card, SEPA, ...)
-* Simple debit balance account
-* Simple credit balance account (for invoice)
-* Two step payment (authorization, capture, refund)
-* Subscription (weekly, monthly)
-* Customer management (security, sensible data)
-  * email and name 
-  * phones
-  * addresses
-  * payment methods
-* Simple signin verification (OTP) with SMS 
+* [x] Stripe payment (card, SEPA, ...)
+* [x] Initial debit balance account
+* [x] Initial credit balance account (for invoice)
+* [x] Two step payment and (partial) refund (authorization, capture, refund)
+* [ ] Multiple accounts transfer funds (**DOING**)
+* [x] Subscription (weekly, monthly)
+* [x] Initial Customer management to protect sensitives data
+  * [x] sensitives data are decoupled from karibou
+  * [ ] email, fname, lname and phone 
+  * [ ] addresses
+  * [x] payment methods
+* [ ] Advanced signin verification  (**TODO**)
+  * [ ] verify from email/password
+  * [ ] verify from inbox email (OTP)
+  * [ ] verify from sms (OTP)
+  * [ ] verify from public key (social web3)
 
 ## Prerequisites
 install node.js with [NVM](https://github.com/nvm-sh/nvm#installing-and-updating) (required). 
@@ -39,13 +44,10 @@ Easiest way to install karibou-wallet is by using npm *(not yet ready for produc
 To run unit tests you need [Mocha](https://github.com/visionmedia/mocha),
 and [should.js](https://github.com/visionmedia/should.js). The tests are run simply by simply typing:
 
-    NODE_ENV=test ./node_modules/.bin/mocha
+    NODE_ENV=test npx mocha
 
 Do not run tests with your live processor. Make sure you are running in a
 sandbox.
-
-## Wallet specification 1.0
-* [specifications of our wallet with Stripe](../../wiki/Wallet-1.0-Specifications-(Stripe-backend))
 
 
 
