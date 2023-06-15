@@ -20,7 +20,7 @@ jobs:
       matrix:
         node-version: [18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-        mongodb-version: ['4.4']
+        # mongodb-version: ['4.4']
         
 
     steps:
@@ -30,9 +30,29 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - name: Start MongoDB
-      uses: supercharge/mongodb-github-action@1.8.0
-      with:
-        mongodb-version: ${{ matrix.mongodb-version }}        
+    - name: Create File
+      uses: finnp/create-file-action@1.0.0
+      env:
+         FILE_NAME: "config-test.js"
+         FILE_DATA: |
+          module.exports = {
+            payment:{
+              allowMultipleSetOption:true,
+              apikey:'123456789',
+              currency:'CHF',
+              allowedCurrencies:['CHF','US','EU'],
+              allowMaxAmount:4000,
+              allowMaxCredit:4000,
+              reservedAmount:1.15,
+              sandbox:true,
+              debug:true,
+              shaSecret:'1234',
+              stripePrivatekey:${{ secrets.stripe }},
+              stripeApiVersion:'2022-11-15',
+              webhookSecret: ${{ secrets.webhook }},
+              grantSecret:${{ secrets.grant }}
+            }
+          }
+
     - run: npm install
     - run: npm run test

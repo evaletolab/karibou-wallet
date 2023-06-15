@@ -21,17 +21,13 @@
   ],
   "dependencies": {
     "fnv-plus": "1.3.*",
-    "iban": "0.0.x",
-    "js-money": "0.x",
     "lru-cache": "^9.1.2",
     "mersenne": "^0.0.4",
-    "mongoose": "^5.13.17",
     "stripe": "^9.16.0",
     "ts-node": "^10.9.1",
     "tslint": "^5.20.1",
     "twilio": "^4.11.0",
     "typescript": "^4.9.5",
-    "underscore": "^1.13.6",
     "validator": "4.7.1"
   },
   "devDependencies": {
@@ -40,7 +36,6 @@
     "axios": "^1.4.0",
     "express": "^4.18.2",
     "mocha": "^3.5.3",
-    "pow-mongoose-fixtures": "^0.3.0",
     "should": "^13.2.3",
     "uglify-js": "^3.17.4"
   },
