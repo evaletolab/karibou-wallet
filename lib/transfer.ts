@@ -4,11 +4,10 @@
 * Licensed under GPL license (see LICENSE)
 */
 
-import { Config } from './config';
+import Config from './config';
 import { Transaction } from './transaction';
 import { Account } from './account';
-import * as stripeLib from 'stripe';
-const stripe = stripeLib(Config.option('privatekey'));
+import { $stripe } from './payments';
 
 export interface Destination {
   account:Account;
@@ -68,14 +67,14 @@ export class Transfer {
   execute() {
     var promiseList = [];
     var errorTransferId = [];
-    if (!this.transaction.isCaptured) {
+    if (!this.transaction.captured) {
       return Promise.reject(new Error("Transaction must be captured before any transfer."));
     }
-    if (this.transaction.getAmountRefunded() !== 0) {
+    if (this.transaction.amount !== 0) {
       return Promise.reject(new Error("Transaction must not have been refunded before transfers"));
     }
 
-    return stripe.transfers.list({transfer_group:this.transaction.getGroupId(), limit:100})
+    return $stripe.transfers.list({transfer_group:this.transaction.group, limit:100})
     .then((transferList) => {
 
       for (let i in this.dest) {
@@ -84,18 +83,18 @@ export class Transfer {
           var ok = true;
           // Check if the transfer has never been done
           for (let j in transferList.data) {
-            if (transferList.data[j].destination === this.dest[i].account.getId()) {
+            if (transferList.data[j].destination === this.dest[i].account.id) {
               ok = false;
               break;
             }
           }
           if (ok) {
-            promiseList.push(stripe.transfers.create({
+            promiseList.push($stripe.transfers.create({
               amount: this.dest[i].amount,
               currency: "chf",
-              destination: this.dest[i].account.getId(),
-              transfer_group: this.transaction.getGroupId(),
-              source_transaction: this.transaction.getId()
+              destination: this.dest[i].account.id,
+              transfer_group: this.transaction.group,
+              source_transaction: this.transaction.id
             }).then((transferStripe) => {
               var date = new Date(transferStripe.created*1000);
               this.dest[i].transferId = transferStripe.id;
@@ -116,7 +115,7 @@ export class Transfer {
         return Promise.all(promiseList).catch(parseError);
       } else {
         return Promise.reject(new Error("Transfer(s) "+errorTransferId.toString()+
-          " don't exist in the groupId "+this.transaction.getGroupId()));
+          " don't exist in the groupId "+this.transaction.group));
       }
     })
   }
@@ -130,7 +129,7 @@ export class Transfer {
   * @returns {any} Promise of the refund or rejected Promise
   */
   refund(account:Account, description:string, amount?:number) {
-    var index = this.dest.findIndex((tmp)=>{return tmp.account.getId() === account.getId()})
+    var index = this.dest.findIndex((tmp)=>{return tmp.account.id === account.id})
 
     if (index === undefined) {
       return Promise.reject(new Error("Account for the transfer not found."));
@@ -146,7 +145,7 @@ export class Transfer {
       return Promise.reject(new Error("Refund impossible the amount is bigger than the one left."));
     }
 
-    return stripe.transfers.createReversal(this.dest[index].transferId,{amount:amount})
+    return $stripe.transfers.createReversal(this.dest[index].transferId,{amount:amount})
         .then((refund) => {
           var date = new Date(refund.created*1000);
           this.dest[index].amountRefunded += refund.amount;
@@ -165,7 +164,7 @@ export class Transfer {
     var promiseList = [];
     for (let i in this.dest) {
       if ((this.dest[i].transferId !== undefined) && (this.dest[i].amount > this.dest[i].amountRefunded))
-      promiseList.push(stripe.transfers.createReversal(this.dest[i].transferId)
+      promiseList.push($stripe.transfers.createReversal(this.dest[i].transferId)
         .then((refund) => {
           var date = new Date(refund.created*1000);
           this.dest[i].amountRefunded = refund.amount;
@@ -185,7 +184,7 @@ export class Transfer {
   */
   getState(account:Account) {
     for (let i in this.dest) {
-      if (account.getId() === this.dest[i].account.getId())
+      if (account.id === this.dest[i].account.id)
         return this.dest[i];
     }
   }

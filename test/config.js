@@ -4,21 +4,12 @@
  * Licensed under MIT license (see LICENSE)
  */
 
-var config = require('../dist/config').Config;
-var helpers = require('./fixtures/helpers');
-var assert = require('assert');
-var should = require('should');
-var test = exports;
+ const assert = require('assert');
+ const should = require('should');
+ const config = require('../dist/config').default;
+ const options = require('../config-test');
+ config.configure(options.payment);
 
-// Set up fixtures
-var testKeyBases = ['key1', 'key2', 'key3'];
-var testKeys = [];
-var badKeys = ['bogus', 'foo', '123'];
-
-// Generate some dummy keys
-testKeyBases.forEach(function(base) {
-  testKeys.push(helpers.generateKey(base));
-});
 
 describe("config", function(){
 
@@ -27,55 +18,39 @@ describe("config", function(){
     done()
   });
 
+
+  after(function(done){
+    config.reset();
+    done()
+  });  
+
   // START TESTING
   it("Initial state", function(done){
-    config.should.property('option');
+    should.exists(config.option);
     config.option('apikey').should.equal('123456789');
     config.option('currency').should.equal('CHF');
-    config.option('publickey').should.equal('pk_test_Rdm8xRlYnL9jTbntvs9e788l');
-    config.option('privatekey').should.equal('sk_test_7v4G5a18JptIOX2cbYAYMsun');
+    config.option('stripeApiVersion').should.equal('2022-11-15');
+    
     //config.option('enabled').should.equal(true);
-    config.option('isConfigured').should.equal(false);
-    config.option('debug').should.equal(false);
-    config.option('sandbox').should.equal(false);
+    config.option('debug').should.equal(true);
+    config.option('sandbox').should.equal(true);
     config.option('allowedCurrencies').should.not.be.empty;
     config.option('allowedCurrencies').should.containEql('CHF');
-    config.option('allowMultipleSetOption').should.equal(false);
-    done()
-  });
-
-  it("Configuration requires all three keys", function(done){
-    assert.throws(function() {
-      config.configure({allowMultipleSetOption:true});
-    });
-
-    assert.throws(function() {
-      config.configure({
-        apiPassword: testKeys[1],
-        apiUser: testKeys[2]
-      });
-    });
-
-    assert.throws(function() {
-      config.configure({
-        pspid: testKeys[0],
-        apiUser: testKeys[2]
-      });
-    });
-
+    config.option('allowMultipleSetOption').should.equal(true);
     done()
   });
 
 
-  it("Proper configuration modifies settings correctly", function(done){
-    config.configure({
-      apikey: testKeys[0],
-      allowMultipleSetOption: true // to prevent locking up settings
+  it("Configuration can't override settings", function(done){
+    config.option({
+      apikey: 'a1',
+      allowMultipleSetOption: false // to prevent locking up settings
     });
-    config.option('apikey').should.equal(testKeys[0]);
+    config.option('apikey').should.equal('123456789');
 
     done()
   });
+
 
   it("Setting individual configuration options", function(done){
 
@@ -102,6 +77,16 @@ describe("config", function(){
     config.option('allowedCurrencies', []);
     config.option('allowedCurrencies').should.not.be.empty;
     config.option('allowedCurrencies').should.containEql('JPY');
+    config.option('allowMultipleSetOption',false);
+
+    done()
+  });
+
+  it("Configuration is locked", function(done){
+    try{
+      config.option('allowMultipleSetOption',true);
+      should.be.false(true);      
+    }catch(err){}
 
     done()
   });

@@ -4,19 +4,17 @@
 * Licensed under GPL license (see LICENSE)
 */
 
-import { Config } from './config';
-import * as stripeLib from 'stripe';
-const stripe = stripeLib(Config.option('privatekey'));
+import { $stripe } from './payments';
 
 export  class  Account {
-  private id:string;
-  private email:string;
-  private lastname:string;
-  private firstname:string;
-  private address:string;
-  private postalCode:string;
-  private city:string;
-  private company:string;
+  private _id:string;
+  private _email:string;
+  private _lastname:string;
+  private _firstname:string;
+  private _address:string;
+  private _postalCode:string;
+  private _city:string;
+  private _company:string;
 
   /**
    * ## account(json)
@@ -24,18 +22,23 @@ export  class  Account {
    * @constructor
    */
   private constructor(params:any) {
-    if ("email" in params) this.email = params.email;
+    if ("email" in params) this._email = params.email;
     else throw new Error("Missing parameter: email");
 
-    if ("id" in params) this.id = params.id;
+    if ("id" in params) this._id = params.id;
     else throw new Error("Missing parameter: Stripe account id");
 
-    this.lastname = params.lastname;
-    this.firstname = params.firstname;
-    this.address = params.address;
-    this.city = params.city;
-    this.postalCode = params.postalCode;
-    this.company = params.company;
+    this._lastname = params.lastname;
+    this._firstname = params.firstname;
+    this._address = params.address;
+    this._city = params.city;
+    this._postalCode = params.postalCode;
+    this._company = params.company;
+  }
+
+
+  get id() {
+    return this.id;
   }
 
   /**
@@ -46,19 +49,19 @@ export  class  Account {
   * @returns {any} Promise for the creation of the account object
   */
   static create(id:string) {
-    return stripe.accounts.retrieve(id).then((account) => {
-      var custJson = JSON.stringify({
-        id:account.id,
-        email:account.email,
-        lastname:account.legal_entity.last_name,
-        firstname:account.legal_entity.first_name,
-        address:account.legal_entity.address.line1,
-        postalCode:account.legal_entity.address.postal_code,
-        city:account.legal_entity.address.city,
-        company:account.business_name
-      });
-      return new Account(JSON.parse(custJson));
-    }).catch(parseError);
+    // return $stripe.accounts.retrieve(id).then((account) => {
+    //   var custJson = JSON.stringify({
+    //     id:account.id,
+    //     email:account.email,
+    //     lastname:account.legal_entity.last_name,
+    //     firstname:account.legal_entity.first_name,
+    //     address:account.legal_entity.address.line1,
+    //     postalCode:account.legal_entity.address.postal_code,
+    //     city:account.legal_entity.address.city,
+    //     company:account.business_name
+    //   });
+    //   return new Account(JSON.parse(custJson));
+    // }).catch(parseError);
   }
 
   /**
@@ -80,9 +83,9 @@ export  class  Account {
   */
   getTransferList(limit:number=10, transferOffset?:any) {
     if (transferOffset != undefined)
-      return stripe.transfers.list({ destination:this.id, limit:limit, starting_after:transferOffset }).catch(parseError);
+      return $stripe.transfers.list({ destination:this.id, limit:limit, starting_after:transferOffset }).catch(parseError);
     else
-      return stripe.transfers.list({ destination:this.id, limit:limit }).catch(parseError);
+      return $stripe.transfers.list({ destination:this.id, limit:limit }).catch(parseError);
   }
 
   /**
