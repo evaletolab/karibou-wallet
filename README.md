@@ -1,16 +1,30 @@
-[![David](https://img.shields.io/david/karibou-ch/karibou-wallet.svg?style=flat)](https://david-dm.org/karibou-ch/karibou-wallet)
-[![Build Status](https://travis-ci.org/karibou-ch/karibou-wallet.svg?branch=master)](https://travis-ci.org/karibou-ch/karibou-wallet)
-[![Join the chat at https://gitter.im/karibou-ch/karibou-wallet](https://badges.gitter.im/karibou-ch/karibou-wallet.svg)](https://gitter.im/karibou-ch/karibou-wallet?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+![build](https://github.com/karibou-ch/karibou-wallet/actions/workflows/node.js.yml/badge.svg)
 
 ## Main usage
 
-The purpose of this project is to provide a simple and intiutive API to handle a simple Wallet manager for your e-commerce. It has bean designed to work on server side.
+The purpose of this project is to provide a simple and intuitive API to handle a simple Wallet manager for our karibou.ch marketplace. It has bean designed to work on server side and it's usefull for,
+* [x] Stripe payment (card, SEPA, ...)
+* [x] Initial debit balance account
+* [x] Initial credit balance account (for invoice)
+* [x] Two step payment and (partial) refund (authorization, capture, refund)
+* [ ] Multiple accounts transfer funds (**DOING**)
+* [x] Subscription (weekly, monthly)
+* [x] Initial Customer management to protect sensitives data
+  * [x] sensitives data are decoupled from karibou
+  * [ ] email, fname, lname and phone 
+  * [ ] addresses
+  * [x] payment methods
+* [ ] Advanced signin verification  (**TODO**)
+  * [ ] verify from email/password
+  * [ ] verify from inbox email (OTP)
+  * [ ] verify from sms (OTP)
+  * [ ] verify from public key (social web3)
 
 ## Prerequisites
-install node.js with [NVM](https://github.com/creationix/nvm) (required). 
+install node.js with [NVM](https://github.com/nvm-sh/nvm#installing-and-updating) (required). 
 
-    nvm install v6.9.5
-    nvm use v6.9.5
+    nvm install v18.x
+    nvm use v8.x
 
 ## Installation
 From github,    
@@ -28,33 +42,17 @@ Easiest way to install karibou-wallet is by using npm *(not yet ready for produc
 To run unit tests you need [Mocha](https://github.com/visionmedia/mocha),
 and [should.js](https://github.com/visionmedia/should.js). The tests are run simply by simply typing:
 
-    NODE_ENV=test ./node_modules/.bin/mocha
+    NODE_ENV=test npx mocha
 
 Do not run tests with your live processor. Make sure you are running in a
 sandbox.
 
-## Wallet specification 1.0
-* [specifications of our wallet with Stripe](../../wiki/Wallet-1.0-Specifications-(Stripe-backend))
-
-### Overview
-When using the karibou-wallet api, you basically deal with 3 separate concepts: 
-- wallet (the container of an amount of money),
-- transaction (helper to manage charges)
-- smartcontract (multiple destinations)
-- transfer information
-
-
-## Authors & spcial thanks :heart:
-
-- David Pate, https://github.com/patedavid
-- Evalet Olivier, https://github.com/evaletolab
-- Noria Foukia Enseignante en mathématiques @HEPIA 
 
 
 ## License
 The API is available under AGPL V3 to protect the long term interests of the community – you are free to use it with no restrictions but if you change the server code, then those code changes must be contributed back.
 
-> Copyright (c) 2014 Olivier Evalet (http://evaletolab.ch/)<br/>
+> Copyright (c) 2014 Olivier Evalet (https://karibou.ch/)<br/>
 > <br/><br/>
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the “Software”), to deal
