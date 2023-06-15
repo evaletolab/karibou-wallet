@@ -1,6 +1,4 @@
-[![David](https://img.shields.io/david/karibou-ch/karibou-wallet.svg?style=flat)](https://david-dm.org/karibou-ch/karibou-wallet)
-[![Build Status](https://travis-ci.org/karibou-ch/karibou-wallet.svg?branch=master)](https://travis-ci.org/karibou-ch/karibou-wallet)
-[![Join the chat at https://gitter.im/karibou-ch/karibou-wallet](https://badges.gitter.im/karibou-ch/karibou-wallet.svg)](https://gitter.im/karibou-ch/karibou-wallet?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+![build](https://github.com/karibou-ch/karibou-wallet/actions/workflows/node.js.yml/badge.svg)
 
 ## Main usage
 
