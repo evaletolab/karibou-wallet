@@ -700,7 +700,7 @@ export class Customer {
 
       const maxcredit = Config.option('allowMaxCredit')/100;    
       if((this.balance + amount)<(-maxcredit)) {
-        throw new Error("Vous avez atteind la limite de crédit de votre compte"+maxcredit);
+        throw new Error("Vous avez atteind la limite de crédit de votre compte");
       }
     }
 

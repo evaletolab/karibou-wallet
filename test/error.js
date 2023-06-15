@@ -1,6 +1,6 @@
 /**
  * postfinance - unit tests for configuration module
- * Copyright (c)2014, by Olivier Evalet <evaleto@gmail.com>
+ * Copyright (c)2020, by Olivier Evalet <olivier@karibou.ch>
  * Copyright (c)2011, by Branko Vukelic <branko@herdhound.com>
  * Licensed under GPL license (see LICENSE)
  */

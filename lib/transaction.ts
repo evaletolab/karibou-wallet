@@ -1,6 +1,6 @@
 /**
 * #transaction.ts
-* Copyright (c)2014, by David Pate <pate.david1@gmail.com>
+* Copyright (c)2020, by olivier@karibou.ch
 * Licensed under GPL license (see LICENSE)
 * TODO? https://groups.google.com/a/lists.stripe.com/forum/#!topic/api-discuss/uoMz4saOa5I
 */
