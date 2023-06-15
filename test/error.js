@@ -16,7 +16,6 @@
 
 describe.skip("error", function(){
 
-
   before(function(done){
     done()
   });

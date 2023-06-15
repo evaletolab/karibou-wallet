@@ -4,6 +4,9 @@
  */
 
 
+const config =require("../dist/config").default;
+const options = require('../config-test');
+config.configure(options.payment);
 
 const payments = require("../dist/payments");
 const should = require('should');
@@ -15,10 +18,15 @@ describe("payment.tools", function(){
     done()
   });
 
+
+
   it("sha256 stripe", ()=>{
     const hex = payments.crypto_sha256("sk_test_514n7ggBTMLb4og7PYz1hmiF2a2lXhjf5246V9yUvNJudBvVeYuRwq2VNNtxid57rwem8Hg2WiD8jZVAz9ZZ5vucX00C2Rk7WPp","base64");
-    console.log('---',hex)
+    //console.log('---',hex)
     // "c2tfdGVzdF9FU0RkYlVUckxvNGU5U0M3dW9RcWxoZDI6"
+
+    console.log(payments.xor("cus_O4M3ImAJRWUcgc"))
+
   })
 
   it("sha256 should return hex", ()=>{
