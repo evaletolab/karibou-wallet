@@ -734,12 +734,15 @@ export class Customer {
     assert(this._metadata.lname);
 
     try{
-      const updated:any= {};
+      const updated:any= {
+        expand: ['cash_balance'],
+        metadata:this._metadata
+      };
       if(identity.fname){
-        this._metadata.fname = identity.fname;
+        updated._metadata.fname = identity.fname;
       }
       if(identity.lname){
-        this._metadata.lname = identity.lname;
+        updated._metadata.lname = identity.lname;
       }
       if(identity.email){
         updated.email = identity.email;
@@ -749,8 +752,7 @@ export class Customer {
       }
 
       const customer = await $stripe.customers.update(
-        this._id,
-        {metadata: this._metadata, expand: ['cash_balance']}
+        this._id,updated
       );    
 
       this._metadata = customer.metadata;
