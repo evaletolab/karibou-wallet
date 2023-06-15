@@ -739,10 +739,10 @@ export class Customer {
         metadata:this._metadata
       };
       if(identity.fname){
-        updated._metadata.fname = identity.fname;
+        updated.metadata.fname = identity.fname;
       }
       if(identity.lname){
-        updated._metadata.lname = identity.lname;
+        updated.metadata.lname = identity.lname;
       }
       if(identity.email){
         updated.email = identity.email;

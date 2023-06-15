@@ -177,6 +177,26 @@ describe("customer", function(){
 
   });
 
+  it("Update customer identity",async function() {
+    const cust = await customer.Customer.get(custCleanList[0]);
+
+    //
+    // update identity
+    const updated = await cust.updateIdentity({
+      email:"testing@wallet.com",
+      fname:"Foooo",
+      lname:"Barrr",
+      phone:"0798887766"
+    });
+
+    updated.email.should.equal("testing@wallet.com");
+    updated.uid.should.equal('1234');
+    updated.phone.should.equal('0798887766');
+    updated.name.familyName.should.equal("Foooo");
+    updated.name.givenName.should.equal("Barrr");
+
+  })
+
 
   it("Add new address", async function() {
     const add = {
