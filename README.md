@@ -11,7 +11,8 @@ The purpose of this project is to provide a simple and intuitive API to handle a
 * [x] Subscription (weekly, monthly)
 * [x] Initial Customer management to protect sensitives data
   * [x] sensitives data are decoupled from karibou
-  * [ ] email, fname, lname and phone 
+  * [ ] email, phone 
+  * [x] fname, lname
   * [ ] addresses
   * [x] payment methods
 * [ ] Advanced signin verification  (**TODO**)
