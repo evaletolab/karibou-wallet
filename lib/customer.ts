@@ -751,7 +751,7 @@ export class Customer {
         updated.phone = identity.phone;
       }
 
-      if(this._id.indexOf('cust_1234')==-1){
+      if(this._id.indexOf('cus_1234')==-1){
         const customer = await $stripe.customers.update(
           this._id,updated
         );    
