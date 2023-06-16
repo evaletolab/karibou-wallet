@@ -91,8 +91,8 @@ export class Customer {
 
   get name() {
     return {
-      familyName:this._fname,
-      givenName:this._lname
+      familyName:this._lname,
+      givenName:this._fname
     };
   }
 
@@ -751,15 +751,17 @@ export class Customer {
         updated.phone = identity.phone;
       }
 
-      const customer = await $stripe.customers.update(
-        this._id,updated
-      );    
-
-      this._metadata = customer.metadata;
-      this._email = customer.email;
-      this._phone = customer.phone;
-      this._fname = customer.metadata.fname;
-      this._lname = customer.metadata.lname;
+      if(this._id.indexOf('cust_1234')==-1){
+        const customer = await $stripe.customers.update(
+          this._id,updated
+        );    
+  
+        this._metadata = customer.metadata;
+        this._email = customer.email;
+        this._phone = customer.phone;
+        this._fname = customer.metadata.fname;
+        this._lname = customer.metadata.lname;  
+      }
 
       //
       // put this new customer in cache 4h
