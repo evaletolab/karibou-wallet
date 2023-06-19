@@ -179,7 +179,7 @@ describe("Class transaction with negative customer credit", function(){
   });  
 
 
-  it("invoice Transaction capture partial amount 4 of 10", async function() {
+  it("invoice Transaction capture partial create a bill of partial amount 4 of 10", async function() {
     const orderPayment = {
       status:defaultTX.status,
       transaction:defaultTX.id,
@@ -191,7 +191,45 @@ describe("Class transaction with negative customer credit", function(){
     defaultTX.status.should.equal("invoice");
     defaultTX.amount.should.equal(4.01);
     defaultTX.refunded.should.equal(6.04);
+
+    const cust = await customer.Customer.get(tx.customer);
+    cust.balance.should.equal(-4.01);
+
   });
+
+  it("invoice Transaction paid bill differ from captured amount 4 chf", async function() {
+    const orderPayment = {
+      status:defaultTX.status,
+      transaction:defaultTX.id,
+      issuer:defaultTX.provider
+    }
+    try{
+      const tx = await transaction.Transaction.fromOrder(orderPayment);
+      defaultTX = await tx.capture(4.02);
+    }catch(err){
+      err.message.should.containEql('because the paid amount is not equal to the value captured');
+    }
+
+  });
+
+
+  it("invoice Transaction paid bill of captured amount 4 chf", async function() {
+    const orderPayment = {
+      status:defaultTX.status,
+      transaction:defaultTX.id,
+      issuer:defaultTX.provider
+    }
+    const tx = await transaction.Transaction.fromOrder(orderPayment);
+    defaultTX = await tx.capture(4.01);
+    defaultTX.provider.should.equal("invoice");
+    defaultTX.status.should.equal("paid");
+    defaultTX.amount.should.equal(4.01);
+    defaultTX.refunded.should.equal(6.04);
+
+    const cust = await customer.Customer.get(tx.customer);
+    cust.balance.should.equal(0);
+  });
+
 
   it("invoice Transaction refund amount too large throw an error", async function() {
     try{

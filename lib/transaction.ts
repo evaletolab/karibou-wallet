@@ -417,7 +417,7 @@ export  class  Transaction {
 
     //
     // normalize amount, minimal capture is 1.0
-    // remove already paid with the customer.balance
+    // remove already paid amount from customer.balance
     const customer_credit = parseInt(this._payment.metadata.customer_credit||"0") / 100;
 		const normAmount = Math.round(Math.max(1,amount-customer_credit)*100);
 
@@ -425,21 +425,44 @@ export  class  Transaction {
       //
       // case of customer credit
       if(this.provider=='invoice') {
+        const customer = await Customer.get(this.customer);
+        let refundAmount=0;
+        let creditAmount=0;
+        let status="";
         //
-        // capture can't exceed the initial locked amount 
-        if(this.amount<(normAmount/100)) {
-          throw new Error("The payment could not be captured because the requested capture amount is greater than the amount you can capture for this charge")          
+        // case of invoice or invoice_paid
+        if(['invoice_paid','invoice'].includes(this.status)){
+
+          //
+          // in this case the amount should equal the preivous captured amount
+          if(this.amount != normAmount/100) {
+            throw new Error("The payment could not be finalyzed because the paid amount is not equal to the value captured");
+          }
+
+          creditAmount = this.amount;
+          status = "paid";
         }
         //
-        // compute the amount that should be restored on customer account
-        // FIXME missing test with error when auth 46.3, capture 40 and refund 6.3
-        const refundAmount = Math.round(this.amount*100-normAmount)/100;
-        const customer = await Customer.get(this.customer);
-        await customer.updateCredit(refundAmount);
+        // case of authorized paiement
+        else{
+          //
+          // capture can't exceed the initial locked amount 
+          if(this.amount<(normAmount/100)) {
+            throw new Error("The payment could not be captured because the requested capture amount is greater than the amount you can capture for this charge");
+          }
+
+          //
+          // compute the amount that should be restored on customer account
+          // FIXME missing test with error when auth 46.3, capture 40 and refund 6.3
+          refundAmount = creditAmount = Math.round(this.amount*100-normAmount)/100;          
+          status = (customer.balance<0)? "invoice":"paid";
+        }
+
+
+        await customer.updateCredit(creditAmount);
 
         //
         // depending the balance position on credit or debit, invoice will be sent
-        const status = (customer.balance<0)? "invoice":"paid";
         this._payment = createOrderPayment(this.customer,normAmount,(this.refunded+refundAmount)*100,status,this.oid);
         this._payment.amount_received = normAmount;
         return this;

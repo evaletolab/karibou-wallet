@@ -15,7 +15,7 @@ The purpose of this project is to provide a simple and intuitive API to handle a
   * [x] fname, lname
   * [ ] addresses
   * [x] payment methods
-* [ ] Advanced signin verification  (**TODO**)
+* [ ] Advanced signin verification (Identity)  (**TODO**)
   * [ ] verify from email/password
   * [ ] verify from inbox email (OTP)
   * [ ] verify from sms (OTP)
