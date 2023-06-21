@@ -71,6 +71,7 @@ export interface KngPaymentInvoice {
   payment_method:"invoice";
   customer: string;
   amount_received?:number;
+  amount_refunded?:number;
   amount:number;
   transfer_group?:string;
   currency:string;
