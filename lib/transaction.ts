@@ -9,7 +9,7 @@ import { strict as assert } from 'assert';
 import Stripe from 'stripe';
 import Config from './config';
 import { Customer } from './customer';
-import { KngCard, $stripe, stripeParseError, unxor, xor, KngPayment, KngPaymentInvoice, KngPaymentStatus, KngOrderPayment } from './payments';
+import { KngCard, $stripe, stripeParseError, unxor, xor, KngPayment, KngPaymentInvoice, KngPaymentStatus, KngOrderPayment, round1cts } from './payments';
 
 
 export interface PaymentOptions {
@@ -347,7 +347,7 @@ export  class  Transaction {
   * @returns {any} Promise which return the charge object or a rejected Promise
   */
    static async confirm(id:string) {
-    const tid = unxor(id);
+    const tid = (id);
     const transaction = await $stripe.paymentIntents.update(tid);
     assert(transaction.customer)
     return new Transaction(transaction);
@@ -613,7 +613,6 @@ export  class  Transaction {
 
       //
       // credit amount already paid with this transaction
-      const customer_credit = parseInt(this._payment.metadata.customer_credit||"0") / 100;
       const customer = await Customer.get(this.customer);
 
 
@@ -639,14 +638,14 @@ export  class  Transaction {
 
         //
         // stripe amount is the maximal refund for stripe
-        const stripeAmount = (amount>amount_received)? Math.round(Math.max(0,amount-amount_received)):amount;
-        const creditAmount = Math.round(Math.max(0,amount-stripeAmount));
+        const stripeAmount = (amount>amount_received)? round1cts(Math.max(0,amount-amount_received)):amount;
+        const creditAmount = round1cts(Math.max(0,amount-stripeAmount));
 
         //
         // refund customer credit amount 
         if(creditAmount>0) {
           await customer.updateCredit(creditAmount);  
-          credit_refunded = createOrderPayment(this.customer,0,(this.refunded+creditAmount)*100,"refunded",this.oid);
+          credit_refunded = createOrderPayment(this.customer,0,(creditAmount)*100,"refunded",this.oid);
         }
         //
         // refund stripe amount 
@@ -661,25 +660,38 @@ export  class  Transaction {
           });  
         }
       } else {
-        if(customer_credit) {
-          await customer.updateCredit(customer_credit);  
-          credit_refunded = createOrderPayment(this.customer,0,(this.refunded+customer_credit)*100,"refunded",this.oid);  
-        }
 
-        this._refund = await $stripe.refunds.create({
-          payment_intent: stripe_id,
-          metadata:{
-            order:this.oid,
-            refunded:customer_credit*100
-          }
-        });        
+        //
+        // credit available for refund is
+        // - the stripe amount to refund is allways the amount received minus the total refunded
+        // - the total after stripe is fully refunded
+        // - the total of payd credit if stripe is not refunded
+        const creditAmount = (this.refunded >= amount_received)? (this.amount - this.refunded):parseFloat(this._payment.metadata.customer_credit||"0")/100;
+        const stripeAmount = round1cts(Math.max(amount_received -  this.refunded,0));
+        if(creditAmount>0) {
+          await customer.updateCredit(creditAmount);  
+          credit_refunded = createOrderPayment(this.customer,0,(creditAmount)*100,"refunded",this.oid);  
+        }
+        if(stripeAmount>0){
+          this._refund = await $stripe.refunds.create({
+            payment_intent: stripe_id,
+            metadata:{
+              order:this.oid,
+              refunded:creditAmount*100
+            }
+          });        
+        }
       }
   
       //
-      // update the total refund on orginal transaction
-      const creditAmount = credit_refunded? credit_refunded.amount_refunded:0;
+      // get the total refund on this transaction
+      const creditAmount = credit_refunded&&credit_refunded.amount_refunded||0;
+      const stripeAmount = this._refund&&this._refund.amount || 0;
+
+      //console.log('----- refund total',creditAmount,stripeAmount, 'total past',this.refunded * 100);
+
+      this._payment.metadata.refund = round1cts(creditAmount + stripeAmount + this.refunded * 100 )+'';
       this._payment.metadata.exended_status = "refunded";
-      this._payment.metadata.refund = (creditAmount + this._refund.amount + this.refunded * 100 )+'';
 
       this._payment = await $stripe.paymentIntents.update(stripe_id,{
         metadata:this._payment.metadata
