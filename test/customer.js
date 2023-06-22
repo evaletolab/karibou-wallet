@@ -56,7 +56,7 @@ describe("customer", function(){
     },
     description: 'Foo Bar id:1234',
     email: 'test@email.com',
-    metadata: { fname: 'Foo', lname: 'Bar', uid: '1234' },
+    metadata: { fname: 'Foo', lname: 'lBar', uid: '1234' },
     name: 'Foo Bar',
     next_invoice_sequence: 1,
     phone: '022345',
@@ -82,35 +82,35 @@ describe("customer", function(){
 
   it("Construction of the customer failed missing uid", async function() {
     try{
-      const cust = await customer.Customer.create("test@email.com","Bar","Foo");
+      const cust = await customer.Customer.create("test@email.com","lBar","Foo");
       should.not.exist(true);  
     }catch(err){}
   });
 
   it("Construction of the customer failed missing phone", async function() {
     try{
-      const cust = await customer.Customer.create("test@email.com","Bar","Foo","022345");
+      const cust = await customer.Customer.create("test@email.com","lBar","Foo","022345");
       should.not.exist(true);  
     }catch(err){}
   });
 
   it("Construction of the customer failed missing name", async function() {
     try{
-      const cust = await customer.Customer.create("test@email.com","Bar","Pouet","022345",1234);
+      const cust = await customer.Customer.create("test@email.com","lBar","Pouet","022345",1234);
       should.not.exist(true);  
     }catch(err){}
   });
 
   it("Construction of the customer failed missing email", async function() {
     try{
-      const cust = await customer.Customer.create("","Bar","Pouet","022345",1234);
+      const cust = await customer.Customer.create("","lBar","Pouet","022345",1234);
       should.not.exist(true);  
     }catch(err){}
   });
 
 
   it("Construction of the customer", async function() {
-    const cust = await customer.Customer.create("test@email.com","Foo","Bar","022345",1234);
+    const cust = await customer.Customer.create("test@email.com","Foo","lBar","022345",1234);
     should.exist(cust);
     custCleanList.push((cust.id));
     cust.should.property('addMethod');
@@ -118,8 +118,8 @@ describe("customer", function(){
     cust.uid.should.equal('1234');
     cust.balance.should.equal(0);
     cust.phone.should.equal('022345');
-    cust.name.familyName.should.equal("Foo");
-    cust.name.givenName.should.equal("Bar");
+    cust.name.familyName.should.equal("lBar");
+    cust.name.givenName.should.equal("Foo");
     should.exist(cust.cashbalance);
     should.not.exist(cust.cashbalance.available);
 
@@ -139,8 +139,8 @@ describe("customer", function(){
     cust.should.property('addMethod');
     unxor(cust.id).should.equal('cus_01');
     cust.uid.should.equal('01');
-    cust.name.familyName.should.equal("Foo");
-    cust.name.givenName.should.equal("Bar");
+    cust.name.familyName.should.equal("lBar");
+    cust.name.givenName.should.equal("Foo");
 
     
     const lookup = customer.Customer.lookup('01');
@@ -159,8 +159,8 @@ describe("customer", function(){
     cust.email.should.equal("test@email.com");
     cust.uid.should.equal('1234');
     cust.phone.should.equal('022345');
-    cust.name.familyName.should.equal("Foo");
-    cust.name.givenName.should.equal("Bar");
+    cust.name.familyName.should.equal("lBar");
+    cust.name.givenName.should.equal("Foo");
 
   });
 
@@ -172,8 +172,8 @@ describe("customer", function(){
     cust.email.should.equal("test@email.com");
     cust.uid.should.equal('1234');
     cust.phone.should.equal('022345');
-    cust.name.familyName.should.equal("Foo");
-    cust.name.givenName.should.equal("Bar");
+    cust.name.familyName.should.equal("lBar");
+    cust.name.givenName.should.equal("Foo");
 
   });
 
@@ -192,8 +192,8 @@ describe("customer", function(){
     updated.email.should.equal("testing@wallet.com");
     updated.uid.should.equal('1234');
     updated.phone.should.equal('0798887766');
-    updated.name.familyName.should.equal("Foooo");
-    updated.name.givenName.should.equal("Barrr");
+    updated.name.familyName.should.equal("Barrr");
+    updated.name.givenName.should.equal("Foooo");
 
   })
 
@@ -393,7 +393,7 @@ describe("customer", function(){
       const payment = await cust.addMethod('pm_card_visa_chargeDeclined');
       should.not.exist(payment);
     }catch(err) {
-      err.message.should.containEql('La banque a refusée')
+      err.message.should.containEql('La banque a refusé')
       should.exist(err);
     }
   });
