@@ -71,6 +71,7 @@ export interface KngPaymentInvoice {
   payment_method:"invoice";
   customer: string;
   amount_received?:number;
+  amount_refunded?:number;
   amount:number;
   transfer_group?:string;
   currency:string;
@@ -308,7 +309,7 @@ export function stripeParseError(err) {
 
 	const declineMessage_fr={
 		approve_with_id : "The payment cannot be authorized",
-		call_issuer : "La banque a refusée votre carte pour une raison inconnue",
+		call_issuer : "La banque a refusé votre carte pour une raison inconnue",
 		card_not_supported : "The card does not support this type of purchase",
 		card_velocity_exceeded : "The customer has exceeded the balance or credit limit available on their card",
 		currency_not_supported : "The card does not support the specified currency",
@@ -317,7 +318,7 @@ export function stripeParseError(err) {
 		duplicate_transaction : "A transaction with identical amount and credit card information was submitted very recently",
 		expired_card : "The card has expired",
 		fraudulent : "The payment has been declined as Stripe suspects it is fraudulent",
-		generic_decline : "La banque a refusée votre carte pour une raison inconnue",
+		generic_decline : "La banque a refusé votre carte pour une raison inconnue",
 		incorrect_number : "The card number is incorrect",
 		incorrect_cvc : "Le numéro CVC est incorrect",
 		incorrect_pin : "The PIN entered is incorrect. This decline code only applies to payments made with a card reader",

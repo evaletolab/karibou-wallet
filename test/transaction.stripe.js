@@ -73,7 +73,7 @@ describe("Class transaction.stripe", function(){
       should.not.exist("dead zone");
     }catch(err){
       should.exist(err);
-      err.message.should.containEql("La banque a refusée")
+      err.message.should.containEql("La banque a refusé")
     }
   });
 
@@ -235,16 +235,18 @@ describe("Class transaction.stripe", function(){
     await tx.refund(2.0);
     tx.refunded.should.equal(2);
 
-    await tx.refund(1.0);
-    tx.refunded.should.equal(3);
-    tx.amount.should.equal(4.55);
+    const atx = await transaction.Transaction.get(tx.id);
+
+    await atx.refund(1.0);
+    atx.refunded.should.equal(3);
+    atx.amount.should.equal(4.55);
 
     defaultTX = tx;
 
   });
 
 
-  it("Transaction from Order", async function() {
+  it("Transaction from Order refund all", async function() {
     const orderPayment = {
       status:defaultTX.status,
       transaction:defaultTX.id,
@@ -254,6 +256,11 @@ describe("Class transaction.stripe", function(){
     tx.provider.should.equal("stripe");
     tx.refunded.should.equal(3);
     tx.status.should.equal("refunded");
+
+    await tx.refund();
+    tx.refunded.should.equal(4.55);
+    tx.amount.should.equal(4.55);
+
 
   });
 

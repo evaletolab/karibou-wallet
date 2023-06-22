@@ -91,8 +91,8 @@ export class Customer {
 
   get name() {
     return {
-      familyName:this._fname,
-      givenName:this._lname
+      familyName:this._lname,
+      givenName:this._fname
     };
   }
 
@@ -700,7 +700,7 @@ export class Customer {
 
       const maxcredit = Config.option('allowMaxCredit')/100;    
       if((this.balance + amount)<(-maxcredit)) {
-        throw new Error("Vous avez atteind la limite de crédit de votre compte"+maxcredit);
+        throw new Error("Vous avez atteind la limite de crédit de votre compte");
       }
     }
 
@@ -734,12 +734,15 @@ export class Customer {
     assert(this._metadata.lname);
 
     try{
-      const updated:any= {};
+      const updated:any= {
+        expand: ['cash_balance'],
+        metadata:this._metadata
+      };
       if(identity.fname){
-        this._metadata.fname = identity.fname;
+        updated.metadata.fname = identity.fname;
       }
       if(identity.lname){
-        this._metadata.lname = identity.lname;
+        updated.metadata.lname = identity.lname;
       }
       if(identity.email){
         updated.email = identity.email;
@@ -748,16 +751,17 @@ export class Customer {
         updated.phone = identity.phone;
       }
 
-      const customer = await $stripe.customers.update(
-        this._id,
-        {metadata: this._metadata, expand: ['cash_balance']}
-      );    
-
-      this._metadata = customer.metadata;
-      this._email = customer.email;
-      this._phone = customer.phone;
-      this._fname = customer.metadata.fname;
-      this._lname = customer.metadata.lname;
+      if(this._id.indexOf('cus_1234')==-1){
+        const customer = await $stripe.customers.update(
+          this._id,updated
+        );    
+  
+        this._metadata = customer.metadata;
+        this._email = customer.email;
+        this._phone = customer.phone;
+        this._fname = customer.metadata.fname;
+        this._lname = customer.metadata.lname;  
+      }
 
       //
       // put this new customer in cache 4h

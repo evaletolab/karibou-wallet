@@ -1,6 +1,6 @@
 /**
 * #transaction.ts
-* Copyright (c)2014, by David Pate <pate.david1@gmail.com>
+* Copyright (c)2020, by olivier@karibou.ch
 * Licensed under GPL license (see LICENSE)
 * TODO? https://groups.google.com/a/lists.stripe.com/forum/#!topic/api-discuss/uoMz4saOa5I
 */
@@ -9,7 +9,7 @@ import { strict as assert } from 'assert';
 import Stripe from 'stripe';
 import Config from './config';
 import { Customer } from './customer';
-import { KngCard, $stripe, stripeParseError, unxor, xor, KngPayment, KngPaymentInvoice, KngPaymentStatus, KngOrderPayment } from './payments';
+import { KngCard, $stripe, stripeParseError, unxor, xor, KngPayment, KngPaymentInvoice, KngPaymentStatus, KngOrderPayment, round1cts } from './payments';
 
 
 export interface PaymentOptions {
@@ -186,10 +186,10 @@ export  class  Transaction {
 
     //
     // available credit 
-    const usedCredit = Math.min(customer.balance,amount);
+    const availableCustomerCredit = Math.min(customer.balance,amount);
 
     // assert amount_capturable > 100
-		const amount_capturable = Math.round((amount-usedCredit)*100);
+		const amount_capturable = Math.round((amount-availableCustomerCredit)*100);
 		const tx_description = "#"+options.oid+" for "+options.email;
     const tx_group = options.txgroup;
 		const shipping = {
@@ -227,12 +227,12 @@ export  class  Transaction {
 
       //
       // use customer credit instead of KngCard
-      if(usedCredit == amount){
-        await customer.updateCredit(-usedCredit);
+      if(availableCustomerCredit == amount){
+        await customer.updateCredit(-availableCustomerCredit);
         //
         // as credit transaction
-        const transaction = createOrderPayment(customer.id,usedCredit*100,0,"authorized",options.oid);
-        transaction.amount_received = usedCredit;
+        const transaction = createOrderPayment(customer.id,availableCustomerCredit*100,0,"authorized",options.oid);
+        transaction.amount_received = availableCustomerCredit;
         return new Transaction(transaction);
       }
       //
@@ -247,7 +247,7 @@ export  class  Transaction {
       }
 
       //
-      // cash balance create a direct charge
+      // CASH BALANCE create a direct charge
       // manual paiement generate the status auth_paid
       else if (card.type == KngPayment.balance) {
         params.payment_method_types = ['customer_balance'];
@@ -273,9 +273,9 @@ export  class  Transaction {
       //
       // update credit balance when coupled with card
       // should store in stripe tx the amount used from customer balance
-      if(usedCredit>0) {
-        await customer.updateCredit(-usedCredit);
-        transaction.metadata.customer_credit = usedCredit*100+'';
+      if(availableCustomerCredit>0) {
+        await customer.updateCredit(-availableCustomerCredit);
+        transaction.metadata.customer_credit = availableCustomerCredit*100+'';
         await $stripe.paymentIntents.update( transaction.id , { 
           metadata:transaction.metadata
         });  
@@ -347,7 +347,7 @@ export  class  Transaction {
   * @returns {any} Promise which return the charge object or a rejected Promise
   */
    static async confirm(id:string) {
-    const tid = unxor(id);
+    const tid = (id);
     const transaction = await $stripe.paymentIntents.update(tid);
     assert(transaction.customer)
     return new Transaction(transaction);
@@ -417,36 +417,60 @@ export  class  Transaction {
 
     //
     // normalize amount, minimal capture is 1.0
-    // remove already paid with the customer.balance
+    // remove already paid amount from customer.balance
     const customer_credit = parseInt(this._payment.metadata.customer_credit||"0") / 100;
 		const normAmount = Math.round(Math.max(1,amount-customer_credit)*100);
 
     try{
+
       //
       // case of customer credit
       if(this.provider=='invoice') {
+        const customer = await Customer.get(this.customer);
+        let refundAmount=0;
+        let creditAmount=0;
+        let status="";
         //
-        // capture can't exceed the initial locked amount 
-        if(this.amount<(normAmount/100)) {
-          throw new Error("The payment could not be captured because the requested capture amount is greater than the amount you can capture for this charge")          
+        // case of invoice or invoice_paid
+        if(['invoice_paid','invoice'].includes(this.status)){
+
+          //
+          // in this case the amount should equal the preivous captured amount
+          if(this.amount != normAmount/100) {
+            throw new Error("The payment could not be finalyzed because the paid amount is not equal to the value captured");
+          }
+
+          creditAmount = this.amount;
+          status = "paid";
         }
         //
-        // compute the amount that should be restored on customer account
-        // FIXME missing test with error when auth 46.3, capture 40 and refund 6.3
-        const refundAmount = Math.round(this.amount*100-normAmount)/100;
-        const customer = await Customer.get(this.customer);
-        await customer.updateCredit(refundAmount);
+        // case of authorized paiement
+        else{
+          //
+          // capture can't exceed the initial locked amount 
+          if(this.amount<(normAmount/100)) {
+            throw new Error("The payment could not be captured because the requested capture amount is greater than the amount you can capture for this charge");
+          }
+
+          //
+          // compute the amount that should be restored on customer account
+          // FIXME missing test with error when auth 46.3, capture 40 and refund 6.3
+          refundAmount = creditAmount = Math.round(this.amount*100-normAmount)/100;          
+          status = (customer.balance<0)? "invoice":"paid";
+        }
+
+
+        await customer.updateCredit(creditAmount);
 
         //
         // depending the balance position on credit or debit, invoice will be sent
-        const status = (customer.balance<0)? "invoice":"paid";
         this._payment = createOrderPayment(this.customer,normAmount,(this.refunded+refundAmount)*100,status,this.oid);
         this._payment.amount_received = normAmount;
         return this;
       }
 
       //
-      // case of cash balance
+      // CASH BALANCE
       if(this.status == "prepaid" as KngPaymentStatus) {
 
         if(normAmount == this._payment.amount) {
@@ -581,13 +605,14 @@ export  class  Transaction {
       throw new Error("Transaction cannot be refunded before capture, try to cancel.");
     }
 
+
+    // keep stripe id in scope
+    const stripe_id = this._payment.id;
     try{
-      // keep stripe id in scope
-      const stripe_id = this._payment.id;
+
 
       //
       // credit amount already paid with this transaction
-      const customer_credit = parseInt(this._payment.metadata.customer_credit||"0") / 100;
       const customer = await Customer.get(this.customer);
 
 
@@ -603,20 +628,25 @@ export  class  Transaction {
       }
 
       //
+      // amount captured by stripe
+      const amount_received = this._payment.amount_received/100;
+      let credit_refunded;
+      
+      //
       // case of positive amount for Stripe or mixed payment
       if (amount > 0) {
 
         //
         // stripe amount is the maximal refund for stripe
-        const stripeAmount = Math.round(Math.max(0,amount-customer_credit));
-        const creditAmount = Math.round(Math.max(0,amount-stripeAmount));
+        const stripeAmount = (amount>amount_received)? round1cts(Math.max(0,amount-amount_received)):amount;
+        const creditAmount = round1cts(Math.max(0,amount-stripeAmount));
+
         //
         // refund customer credit amount 
         if(creditAmount>0) {
           await customer.updateCredit(creditAmount);  
-          this._payment = createOrderPayment(this.customer,0,(this.refunded+creditAmount),"refunded",this.oid);
+          credit_refunded = createOrderPayment(this.customer,0,(creditAmount)*100,"refunded",this.oid);
         }
-
         //
         // refund stripe amount 
         if(stripeAmount>0){
@@ -625,29 +655,45 @@ export  class  Transaction {
             amount:stripeAmount*100,
             metadata:{
               order:this.oid,
+              refunded:creditAmount*100
             }
           });  
         }
       } else {
-        if(customer_credit) {
-          await customer.updateCredit(customer_credit);  
-          this._payment = createOrderPayment(this.customer,0,(this.refunded+customer_credit)*100,"refunded",this.oid);  
-        }
 
-        this._refund = await $stripe.refunds.create({
-          payment_intent: stripe_id,
-          metadata:{
-            order:this.oid
-          }
-        });        
+        //
+        // credit available for refund is
+        // - the stripe amount to refund is allways the amount received minus the total refunded
+        // - the total after stripe is fully refunded
+        // - the total of payd credit if stripe is not refunded
+        const creditAmount = (this.refunded >= amount_received)? (this.amount - this.refunded):parseFloat(this._payment.metadata.customer_credit||"0")/100;
+        const stripeAmount = round1cts(Math.max(amount_received -  this.refunded,0));
+        if(creditAmount>0) {
+          await customer.updateCredit(creditAmount);  
+          credit_refunded = createOrderPayment(this.customer,0,(creditAmount)*100,"refunded",this.oid);  
+        }
+        if(stripeAmount>0){
+          this._refund = await $stripe.refunds.create({
+            payment_intent: stripe_id,
+            metadata:{
+              order:this.oid,
+              refunded:creditAmount*100
+            }
+          });        
+        }
       }
   
       //
-      // update the total refund on orginal transaction
-      this._payment.metadata.exended_status = "refunded";
-      this._payment.metadata.refund = (this._refund.amount + this.refunded * 100 )+'';
+      // get the total refund on this transaction
+      const creditAmount = credit_refunded&&credit_refunded.amount_refunded||0;
+      const stripeAmount = this._refund&&this._refund.amount || 0;
 
-      this._payment = await $stripe.paymentIntents.update(this._payment.id,{
+      //console.log('----- refund total',creditAmount,stripeAmount, 'total past',this.refunded * 100);
+
+      this._payment.metadata.refund = round1cts(creditAmount + stripeAmount + this.refunded * 100 )+'';
+      this._payment.metadata.exended_status = "refunded";
+
+      this._payment = await $stripe.paymentIntents.update(stripe_id,{
         metadata:this._payment.metadata
       })  
   
@@ -666,6 +712,7 @@ function createOrderPayment(customer_id,amount,refund,status,oid) {
   const transaction:KngPaymentInvoice = {
     amount:amount,
     client_secret:xor(oid),
+    amount_refunded:refund||0,
     currency:'CHF',
     customer:customer_id,
     description:"#"+oid,
