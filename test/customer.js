@@ -87,12 +87,19 @@ describe("customer", function(){
     }catch(err){}
   });
 
+
   it("Construction of the customer failed missing phone", async function() {
     try{
       const cust = await customer.Customer.create("test@email.com","lBar","Foo","022345");
       should.not.exist(true);  
     }catch(err){}
   });
+
+  it("Customer search ", async function(){
+    const uids = await customer.Customer.search('022345');
+    console.log('----',uids);
+  })
+
 
   it("Construction of the customer failed missing name", async function() {
     try{

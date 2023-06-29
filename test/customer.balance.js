@@ -83,7 +83,7 @@ describe("customer.balance", function(){
       await cust.updateCredit(40.1);      
       should.not.exist("dead zone");
     }catch(err) {
-      err.message.should.containEql('exceed limitation of');
+      err.message.should.containEql('Vous avez atteind la limite de votre portefeuille');
     }
   });
 
@@ -104,7 +104,7 @@ describe("customer.balance", function(){
       await cust.updateCredit(0.1);      
       should.not.exist("dead zone");
     }catch(err) {
-      err.message.should.containEql('exceed limitation of');
+      err.message.should.containEql('Vous avez atteind la limite de votre portefeuille');
     }
   });
 
