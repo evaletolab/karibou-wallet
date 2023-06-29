@@ -137,14 +137,25 @@ export class Customer {
       query: `phone~'${query}' OR name~'${query}' OR email~'${query}'`
     });
 
-    return customers.data.map(stripe => new Customer(
-      stripe.id,
-      stripe.email,
-      stripe.phone,
-      stripe.cash_balance,
-      stripe.balance,
-      stripe.metadata
-    ));
+    const defaultUser = Object.assign({},{
+      phone:'0225550000',
+      cash_balance:0,
+      balance:0,
+      metadata:{uid:'0',fname:'foo',lname:'bar'}
+    });
+    
+    return customers.data.filter(stripe => !!stripe.email).map(stripe => {
+      const merged = Object.assign({},defaultUser,stripe);
+      merged.metadata = Object.assign({},defaultUser.metadata,stripe.metadata)
+      return new Customer(
+        merged.id,
+        merged.email,
+        merged.phone,
+        merged.cash_balance,
+        merged.balance,
+        merged.metadata
+      )
+    });
   }
 
   /**
@@ -708,7 +719,7 @@ export class Customer {
     // max amount credit verification
     const maxamount = Config.option('allowMaxAmount')/100;    
     if((this.balance + amount)>maxamount) {
-      throw new Error("Credit exceed limitation of "+maxamount);
+      throw new Error("Vous avez atteind la limite de votre portefeuille "+maxamount.toFixed(2)+" chf");
     }
 
     //

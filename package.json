@@ -1,7 +1,7 @@
 {
   "name": "karibou-wallet",
   "description": "Simple Payment API client library for Karibou.ch",
-  "version": "2.9.99998",
+  "version": "3.0.0",
   "author": "Olivier Evalet <olivier@karibou.ch>",
   "main": "dist/index",
   "files": [
