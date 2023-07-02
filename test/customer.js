@@ -97,7 +97,8 @@ describe("customer", function(){
 
   it("Customer search ", async function(){
     const uids = await customer.Customer.search('022345');
-    console.log('----',uids);
+    should.exist(uids);
+    
   })
 
 

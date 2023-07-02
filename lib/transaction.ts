@@ -359,15 +359,9 @@ export  class  Transaction {
   * @returns {any} Promise which return the charge object or a rejected Promise
   */
   async capture(amount:number) {
-    if (this.canceled){
-      return Promise.reject(new Error("Transaction canceled."));
-    }
-    if (!this.authorized){
-      return Promise.reject(new Error("Transaction need to be authorized."));
-    }
 
     if (amount == undefined || amount < 0){
-      return Promise.reject(new Error("Transaction need a null or positive amount to proceed"));
+      throw (new Error("Transaction need a null or positive amount to proceed"));
     }
 
     
@@ -378,8 +372,6 @@ export  class  Transaction {
     // off_session = true  payment without user interaction
     // - https://stripe.com/docs/payments/save-during-payment#web-create-payment-intent-off-session
     const _force_recapture= (amount) => {
-      const paymentId = unxor(this.paymentId);
-      console.log(' -- WARNING: charge has expired, create a new one with the ref ' + (this.customer) + '/' + (this.paymentId));
 
       // Pour donner un exemple, si un client a effectué plus de 5 paiements, 
       // ou une série de paiements d'une somme supérieure à 100€ 
@@ -399,19 +391,17 @@ export  class  Transaction {
 
       // FIXME, CHF currency are not accepted for US cards.!! 
       return $stripe.paymentIntents.create({
-        amount:amount,
+        amount:Math.round(amount*100),
         currency: "CHF",
-        customer:(this.customer),
-        payment_method: paymentId, 
+        customer:(payment.customer as string),
+        payment_method: (payment.payment_method as string), 
         transfer_group: this.group,
         off_session: true,
         capture_method:'automatic', 
         confirm:true,
         shipping: shipping,
         description: payment.description,
-        metadata: {
-          order: this.oid
-        }
+        metadata: payment.metadata
       });    
     }
 
@@ -426,6 +416,14 @@ export  class  Transaction {
       //
       // case of customer credit
       if(this.provider=='invoice') {
+
+        if (this.canceled){
+          throw (new Error("Transaction canceled."));
+        }
+        if (!this.authorized){
+          throw (new Error("Transaction need to be authorized."));
+        }
+    
         const customer = await Customer.get(this.customer);
         let refundAmount=0;
         let creditAmount=0;
