@@ -124,9 +124,9 @@ describe("Class transaction with credit.balance mixed with other payment", funct
   it("Transaction refound all", async function() {
     const tx = await transaction.Transaction.get(defaultTX.id);
     const cmp = await tx.refund();
-    console.log('---- tx ', tx.amount);
-    console.log('---- tx ', tx.refunded);
-    console.log('---- tx ', tx.status);
+    // console.log('---- tx ', tx.amount);
+    // console.log('---- tx ', tx.refunded);
+    // console.log('---- tx ', tx.status);
     tx.amount.should.eql(15);
     tx.refunded.should.eql(15);
     tx.status.should.eql("refunded");
