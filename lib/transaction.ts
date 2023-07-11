@@ -627,7 +627,7 @@ export  class  Transaction {
 
       //
       // amount captured by stripe
-      const amount_received = this._payment.amount_received/100;
+      const amount_stripe_received = Math.max(0,this._payment.amount_received/100 - this.refunded);
       let credit_refunded;
       
       //
@@ -636,9 +636,14 @@ export  class  Transaction {
 
         //
         // stripe amount is the maximal refund for stripe
-        const stripeAmount = (amount>amount_received)? round1cts(Math.max(0,amount-amount_received)):amount;
+        const stripeAmount = (amount>amount_stripe_received)? amount_stripe_received:amount;
         const creditAmount = round1cts(Math.max(0,amount-stripeAmount));
 
+        // debug edge case 
+        // console.log('---DBG refund credit',creditAmount,amount_stripe_received,amount)
+        // console.log('---DBG refund stripe',stripeAmount)
+
+        
         //
         // refund customer credit amount 
         if(creditAmount>0) {
@@ -664,8 +669,9 @@ export  class  Transaction {
         // - the stripe amount to refund is allways the amount received minus the total refunded
         // - the total after stripe is fully refunded
         // - the total of payd credit if stripe is not refunded
-        const creditAmount = (this.refunded >= amount_received)? (this.amount - this.refunded):parseFloat(this._payment.metadata.customer_credit||"0")/100;
-        const stripeAmount = round1cts(Math.max(amount_received -  this.refunded,0));
+        const customer_credit = parseFloat(this._payment.metadata.customer_credit||"0")/100;
+        const stripeAmount = amount_stripe_received;
+        const creditAmount = (amount_stripe_received)? customer_credit : round1cts(customer_credit - (this.refunded - this._payment.amount_received/100));
         if(creditAmount>0) {
           await customer.updateCredit(creditAmount);  
           credit_refunded = createOrderPayment(this.customer,0,(creditAmount)*100,"refunded",this.oid);  

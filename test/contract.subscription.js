@@ -17,7 +17,7 @@
  const $stripe = require("../dist/payments").$stripe;
  const should = require('should');
  const cartItems = require('./fixtures/cart.items');
-const { default: Webhook,WebhookContent } = require("../dist/webhook");
+const { Webhook,WebhookContent } = require("../dist/webhook");
 
 
  //
@@ -224,7 +224,7 @@ describe("Class subscription", function(){
       content.contract.id.should.equal(defaultSub.id);
       content.error.should.equal(false);      
     }catch(err) {
-      console.log('---ERR',err)
+      console.log('---ERR',err.message)
     }
   });
 	
@@ -244,7 +244,7 @@ describe("Class subscription", function(){
       content.transaction.id.should.equal(defaultTx.id);
       content.error.should.equal(true);      
     }catch(err) {
-      console.log('---ERR',err)
+      console.log('---ERR',err.message)
     }
   });
 	
@@ -262,7 +262,7 @@ describe("Class subscription", function(){
       content.contract.id.should.equal(defaultSub.id);
       content.error.should.equal(false);      
     }catch(err) {
-      console.log('---ERR',err)
+      console.log('---ERR',err.message)
     }
   });
 	  

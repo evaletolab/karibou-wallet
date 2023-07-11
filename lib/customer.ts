@@ -6,7 +6,8 @@ import Config, { nonEnumerableProperties } from './config';
 
 //
 // using memory cache limited to 1000 customer in same time for 4h
-const cache = new (require("lru-cache").LRUCache)({maxAge:1000 * 60 * 60 * 4,max:1000});
+const cache = new (require("lru-cache").LRUCache)({ttl:1000 * 60 * 60 * 4,max:1000});
+const locked = new (require("lru-cache").LRUCache)({ttl:2000,max:1000});
 
 export class Customer {
 
@@ -39,14 +40,13 @@ export class Customer {
   private constructor(id:string,email:string, phone: string, cashbalance:any, balance:number, metadata:any) {
     assert(id);
     assert(email);
-    assert(phone);
     assert(metadata.uid);
     assert(metadata.fname);
     assert(metadata.lname);
     
     this._balance = balance;
     this._email = email;
-    this._phone = phone;
+    this._phone = phone ||'';
     this._fname = metadata.fname;
     this._lname = metadata.lname;
     this._uid = metadata.uid+'';
@@ -121,6 +121,20 @@ export class Customer {
       return balance;
     }
     return this._cashbalance;
+  }
+
+  // 
+  // avoid reentrency
+  lock(api){
+    const islocked = locked.get(this.id+api)
+    if (islocked){
+      throw new Error("reentrancy detection");
+    }
+    locked.set(this.id+api,true);
+  }
+
+  unlock(api) {
+    locked.delete(this.id+api);
   }
 
   //
@@ -247,8 +261,10 @@ export class Customer {
     assert(this._metadata.uid);
     assert(this._metadata.fname);
     assert(this._metadata.lname);
-
+    const _method = 'addaddress';
     try{
+      this.lock(_method);
+
       const keys = metadataElements(this._metadata,'addr');
       address.id = 'addr-' + keys.length + 1;
       this._metadata[address.id] = JSON.stringify(address,null,0);
@@ -263,8 +279,10 @@ export class Customer {
       //
       // put this new customer in cache 4h
       cache.set(this.id,this);
+      this.unlock(_method);
       return Object.assign({},address);
     }catch(err) {
+      this.unlock(_method);
       throw parseError(err);
     }     
   }
@@ -339,7 +357,10 @@ export class Customer {
   * @returns the payment method object
   */
   async addMethod(token:string) {
+    const _method = 'addmethod';
+
     try{
+      this.lock(_method);
       const method:any = await $stripe.paymentMethods.attach(token,{customer:this._id});
       if(method.status == "requires_action") {
         //
@@ -364,13 +385,46 @@ export class Customer {
       //
       // put this new customer in cache 4h
       cache.set(this.id,this);
+      this.unlock(_method);
 
       return card;
     }catch(err) {
+      this.unlock(_method);
       throw parseError(err);
     } 
   }
 
+
+  //
+  // update customer balance with coupon code
+  async applyCoupon(code:string) {
+    const _method = 'appcoupon';
+
+    this.lock(_method);
+    const coupon = await $stripe.coupons.retrieve(
+      code
+    );
+
+
+    const amount = coupon.amount_off;
+    const validity = new Date(coupon.created*1000 + (coupon.duration_in_months||12)*32*86400000);
+    if (validity.getTime()<Date.now()){
+      throw new Error("Le coupon n'est plus valide, merci de bien vouloir nous contacter");
+    }
+
+    if(!amount || amount<0) {
+      this.unlock(_method);
+      throw new Error("le coupon ne contient pas de crédit");
+    }
+
+    //
+    // it's more safe to remove code 
+    await $stripe.coupons.del(code);
+
+    await this.updateCredit(amount/100);
+    this.unlock(_method);
+    return this;
+  }
 
   //
   // check if a payment method is valid
@@ -693,11 +747,13 @@ export class Customer {
   // add credit to a customer
   // FIXME: balance is completly unsecure 
   async updateCredit(amount:number) {
-
+    const _method = 'updatecredit';
+    this.lock(_method);
     //
     // max negative credit verification
     if((this.balance + amount)<0) {
       if(!this.allowedCredit()){
+        this.unlock(_method);
         throw new Error("Le paiement par crédit n'est pas disponible");
       }
 
@@ -706,11 +762,13 @@ export class Customer {
       const fingerprint = crypto_fingerprint(this.id+this.uid+'invoice');
       const check = await this.checkMethods(false);
       if(check[fingerprint].error) {
+        this.unlock(_method);
         throw new Error(check[fingerprint].error);
       }
 
       const maxcredit = Config.option('allowMaxCredit')/100;    
       if((this.balance + amount)<(-maxcredit)) {
+        this.unlock(_method);
         throw new Error("Vous avez atteind la limite de crédit de votre compte");
       }
     }
@@ -719,6 +777,7 @@ export class Customer {
     // max amount credit verification
     const maxamount = Config.option('allowMaxAmount')/100;    
     if((this.balance + amount)>maxamount) {
+      this.unlock(_method);
       throw new Error("Vous avez atteind la limite de votre portefeuille "+maxamount.toFixed(2)+" chf");
     }
 
@@ -734,7 +793,8 @@ export class Customer {
     //
     // put this new customer in cache 4h
     cache.set(this.id,this);
-
+    this.unlock(_method);
+    return this;
   }
 
 
