@@ -67,13 +67,29 @@ export class Webhook {
 
 
       // 
-      // on invoice payment success
-      if(event.type == 'invoice.payment_succeeded') {
+      // on invoice payment success with VISA/MC
+      if(event.type == 'invoice.payment_succeeded' && event.data.object.payment_intent) {
         const invoice = event.data.object as Stripe.Invoice;
+
         const transaction = await Transaction.get(xor(invoice.payment_intent.toString()));
         const contract = await SubscriptionContract.get(invoice.subscription);
         return { event: event.type ,contract, transaction ,error:false} as WebhookStripe;
       }
+
+      // 
+      // on invoice payment success with customer credit
+      if(event.type == 'invoice.payment_succeeded' && !event.data.object.payment_intent) {
+        const invoice = event.data.object as Stripe.Invoice;
+
+        const contract = await SubscriptionContract.get(invoice.subscription);
+        const customer = await contract.customer();
+        if (!customer.allowedCredit()){
+          throw new Error("Customer credit is not allowed");
+        }
+
+        return { event: event.type ,customer, contract ,error:false} as WebhookStripe;
+      }
+
 
       //
       // on payment success, 
