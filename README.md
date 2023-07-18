@@ -19,7 +19,7 @@ The purpose of this project is to provide a simple and intuitive API to handle a
   * [ ] verify from email/password
   * [ ] verify from inbox email (OTP)
   * [ ] verify from sms (OTP)
-  * [ ] verify from public key (social web3)
+  * [ ] verify from public key (web3/BTC)
 
 ## Prerequisites
 install node.js with [NVM](https://github.com/nvm-sh/nvm#installing-and-updating) (required). 
